@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import type {FTMSDeviceData} from '@/models'
 
 const FTMS_SERVICE_UUID = '00001826-0000-1000-8000-00805f9b34fb';
 const INDOOR_BIKE_DATA_CHAR = '00002ad2-0000-1000-8000-00805f9b34fb';
@@ -11,7 +10,7 @@ const SET_INDOOR_BIKE_SIMULATION_OP_CODE = 0x11;
 
 
 export const useTrainerStore = defineStore('trainer', () => {
-    const targetGrade = ref(0.0);
+    const targetGrade = ref(0.5);
 
     const windValue = 0;
     const crrValue = 0.0060;
@@ -50,25 +49,48 @@ export const useTrainerStore = defineStore('trainer', () => {
         return targetGrade
     }
 
+    let firstEventTimestamp = 0;
+    const rawEvents: any[] = [];
+
     function onBikeDataChanged(event: Event){
-         const value = (event.target as any).value;
+        const value = (event.target as any).value;
 
-         const flags = value.getUint16(0, true);
+        const flags = value.getUint16(0, true);
 
-         let offset = 2
-         speed.value = value.getUint16(offset, true) * 0.01
-         offset += 2
 
-         // Instantaneous Cadence
-         if( flags & (1 << 2) ){
-            cadence.value = value.getUint16(offset, true) * 0.5
+        let speedValue = value.getUint16(2, true) * 0.01
+        let powerValue = 0
+        let cadenceValue = 0
+
+        let offset = 4
+
+        // Instantaneous Cadence is present
+        if( flags & (1 << 2) ){
+            cadenceValue = value.getUint16(offset, true) * 0.5
             offset += 2
-         }
-         if( flags & (1 << 6) ){
-            power.value = value.getInt16(offset, true)
+        }
+        // Instantaneous Power is present
+        if( flags & (1 << 6) ){
+            powerValue = value.getInt16(offset, true)
             offset += 2
-         }
+        }
+
+        // Aggregate date within one second
+        if( event.timeStamp - firstEventTimestamp >= 1000 ){
+            speed.value = rawEvents.length > 0 ? rawEvents.reduce( (acc :number, current :any) => acc + current.speed, 0) / rawEvents.length : 0
+            power.value = rawEvents.length > 0 ? rawEvents.reduce( (acc :number, current :any) => acc + current.power, 0) / rawEvents.length : 0
+            cadence.value = rawEvents.length >0 ? rawEvents.reduce( (acc :number, current :any) => acc + current.cadence, 0) / rawEvents.length : 0
+
+            rawEvents.length = 0
+            firstEventTimestamp = event.timeStamp
+        }
+        rawEvents.push({
+            speed: speedValue, 
+            power: powerValue, 
+            cadence: cadenceValue
+        })
     }
+
     function onBikeCommandExecuted(event: Event){
         const value = (event.target as any).value as DataView;
 

@@ -34,10 +34,35 @@
 
   function startActitvitySession(){
     changeTrainerGrade(0)
-    activity.startActivity(computed(() => trainer.speed))
+    activity.startActivity(
+      computed(() => { 
+        return {
+          speed: trainer.speed,
+          power: trainer.power,
+          cadence: trainer.cadence,
+          grade: trainer.grade,
+          heartRate: heart.heartRate
+        }
+      })
+    )
   }
+
   function stopActivitySession(){
     activity.stopActivity()
+  }
+
+  function exportActivityData(){
+    const blob = new Blob([activity.activityFitData?.buffer as ArrayBuffer], { type: 'application/octetstream' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'activity.fit';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);    
   }
 </script>
 
@@ -48,6 +73,7 @@
       <UButton class="mr-2 text-lg" @click="connectDevice(heart)" :disabled="heart.isConnected"><template v-if="heart.isConnected">{{ heart.deviceName }}</template><template v-else>Connect HRM</template></UButton>
       <UButton class="mr-2 text-lg" @click="startActitvitySession()" :disabled="!trainer.isConnected" v-if="!activity.isStarted">Start</UButton>
       <UButton class="mr-2 text-lg" @click="stopActivitySession()" v-if="activity.isStarted">Stop</UButton>
+      <UButton class="mr-2 text-lg" @click="exportActivityData()" v-if="!activity.isStarted && activity.activityFitData">Download</UButton>
     </div>
 
     <UForm class="mb-6">
@@ -60,13 +86,13 @@
         <div class="text-4xl">{{ trainer.speed.toFixed(1) }} km/h</div>
       </UFormField>
       <UFormField class="text-4xl mb-1" label="Power" orientation="horizontal" v-if="trainer.isConnected">
-        <div class="text-4xl">{{ trainer.power }} wt</div>
+        <div class="text-4xl">{{ trainer.power.toFixed(0) }} wt</div>
       </UFormField>
       <UFormField class="text-4xl mb-1" label="Cadence" orientation="horizontal" v-if="trainer.isConnected">
-        <div class="text-4xl">{{ trainer.cadence }} rpm</div>
+        <div class="text-4xl">{{ trainer.cadence.toFixed(0) }} rpm</div>
       </UFormField>
       <UFormField class="text-4xl mb-1" label="Heart rate" orientation="horizontal" v-if="heart.isConnected">
-        <div class="text-4xl">{{ heart.heartRate }} bpm</div>
+        <div class="text-4xl">{{ heart.heartRate.toFixed(0) }} bpm</div>
       </UFormField>
     </UForm>
 
@@ -75,8 +101,12 @@
         <div class="text-4xl">{{ (activity.distance/1000).toFixed(2) }} km</div>
       </UFormField>
 
+      <UFormField class="text-4xl mb-1" label="Climb" orientation="horizontal">
+        <div class="text-4xl">{{ activity.climb.toFixed(1) }} m</div>
+      </UFormField>
+
       <UFormField label="Time" orientation="horizontal" class="text-4xl mb-1">
-        <div class="text-4xl">{{ Math.trunc(activity.elapsed/3600).toString().padStart(2, '0') }}:{{ (Math.trunc(activity.elapsed/60)%60).toString().padStart(2, '0') }}:{{ (activity.elapsed%60).toString().padStart(2, '0') }}</div>
+        <div class="text-4xl">{{ Math.trunc(activity.elapsed/3600).toString().padStart(2, '0') }}:{{ (Math.trunc(activity.elapsed/60)%60).toString().padStart(2, '0') }}:{{ Math.trunc(activity.elapsed%60).toString().padStart(2, '0') }}</div>
       </UFormField>
     </UForm>
   </UContainer>

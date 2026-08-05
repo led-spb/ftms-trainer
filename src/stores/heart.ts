@@ -17,14 +17,20 @@ export const useHeartStore = defineStore('heart', () => {
         return isConnected.value ? bluetoothDevice.value.name : null;
     })
 
+    let firstEventTimestamp = 0;
+    const rawEvents: number[] = [];
+
     function onHrmDataChanged(event: Event){
         const value = (event.target as any).value;
         const flags = value.getUint8(0);
-        if (flags & 0x01) {
-            heartRate.value = value.getUint16(1, true);
-        } else {
-            heartRate.value = value.getUint8(1);
+
+        let heartRateValue = flags & 0x01 ? value.getUint16(1, true) : value.getUint8(1);
+
+        if( event.timeStamp - firstEventTimestamp >= 1000 ){
+            heartRate.value = rawEvents.length > 0 ? rawEvents.reduce( (acc, current) => acc+current, 0 ) / rawEvents.length : 0
+            rawEvents.length = 0
         }
+        rawEvents.push(heartRateValue)
     }
 
     async function selectDevice(){

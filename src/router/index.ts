@@ -10,6 +10,11 @@ const router = createRouter({
       name: 'home',
       component: () => import('../pages/Home.vue'),
     },
+    { 
+      path: '/fit',
+      name: 'fit',
+      component: () => import('../pages/Analyze.vue'),
+    },
   ],
 })
 
