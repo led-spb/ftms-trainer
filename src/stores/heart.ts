@@ -7,7 +7,7 @@ const HRM_CHARACTERISTIC_UUID = '00002a37-0000-1000-8000-00805f9b34fb';
 export const useHeartStore = defineStore('heart', () => {
     const bluetoothDevice = ref();
 
-    const heartRate = ref(<number>0)
+    const heartRate = ref<number|null>(null)
 
     const isConnected = computed(() => {
         return bluetoothDevice.value != null && bluetoothDevice.value.gatt.connected;

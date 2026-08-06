@@ -3,6 +3,9 @@
   import { Decoder, Stream, Profile, Utils } from '@garmin/fitsdk';
 
   import Chart from 'chart.js/auto';
+  import zoomPlugin from 'chartjs-plugin-zoom';
+  Chart.register(zoomPlugin)
+  
   import type { ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
 
@@ -51,7 +54,19 @@
   const chartOptions: any = {
     responsive: true,
     plugins: {
-      legend: {display: false}
+      legend: {display: false},
+      zoom: {
+        pan: {
+          enabled: true,
+          modifierKey: 'ctrl',
+        },
+        zoom: {
+          drag: {
+            enabled: true,
+          },
+          mode: 'xy',  
+        }
+      },
     },
     scales: {
       x: {type: 'linear'}
@@ -83,10 +98,13 @@
           const nextItem = reducedRecords[index+1]
           const deltaDistance = (nextItem?.distance || 0) - (item.distance || 0)
           const deltaAltitude = (nextItem?.altitude || item.altitude || 0) - (item.altitude || 0)
+
           grade = deltaDistance > 0 ? (deltaAltitude / deltaDistance) * 100 : 0;
         }
         return {...item, grade}
     }) as []
+
+    console.log((records.value as any[]).map((item) => {return {distance: item.distance, altitude: item.altitude, grade: item.grade}}) )
   }
 </script>
 

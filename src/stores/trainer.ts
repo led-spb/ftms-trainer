@@ -20,9 +20,9 @@ export const useTrainerStore = defineStore('trainer', () => {
     let controlPointChar: any = null;
     let indoorBikeDataChar = null;
 
-    const speed = ref(<number>0);
-    const power = ref(<number>0);
-    const cadence = ref(<number>0);
+    const speed = ref<number|null>(null);
+    const power = ref<number|null>(null);
+    const cadence = ref<number|null>(null);
 
     const grade = computed(() => targetGrade.value)
   
@@ -97,6 +97,7 @@ export const useTrainerStore = defineStore('trainer', () => {
         const responseCode = value.getUint8(0);
         const requestOpCode = value.getUint8(1);
         const requestResCode = value.getUint8(2);
+
         //console.log(`Trainer responseCode: ${responseCode}, requestOpCode: ${requestOpCode}, result: ${requestResCode}`)
     }
 
