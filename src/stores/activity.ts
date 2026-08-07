@@ -16,11 +16,6 @@ export const useActivityStore = defineStore('activity', () => {
     const fitEncoder = new FitEncoder()
 
     let timerId: any = null
-    let wakeLockId: any = null;
-
-    async function requestWakeLock() {
-        return await navigator.wakeLock.request('screen');
-    }
 
     function startActivity(metrics: Ref, geoPathStrategy: GeoPathStrategy|null){
         started.value = true
@@ -34,6 +29,7 @@ export const useActivityStore = defineStore('activity', () => {
         let latitude: number|null = null
 
         fitEncoder.beginActivity()
+        console.log(geoPathStrategy)
 
         let activityTimestamp = (new Date()).getTime()/1000
 
@@ -57,10 +53,9 @@ export const useActivityStore = defineStore('activity', () => {
             if( geoPathStrategy ){
                 try {
                     const geoPoint = geoPathStrategy.geoPointByDistance(distance.value)
-
-                    latitude = geoPoint.latitude
-                    longitude = geoPoint.longitude
-                    if( geoPoint.altitude != null )
+                    latitude = geoPoint ? geoPoint.latitude : null
+                    longitude = geoPoint ? geoPoint.longitude : null
+                    if( geoPoint && geoPoint.altitude != null )
                         altitude = geoPoint.altitude
                 } catch (err) {
                     console.error(err)
@@ -75,20 +70,11 @@ export const useActivityStore = defineStore('activity', () => {
 
             activityTimestamp = nowTimestamp
         }, 1000)
-
-        requestWakeLock().then( (value) => {
-            wakeLockId = value
-        })
     }
 
     function stopActivity(){
         started.value = false;
         clearInterval(timerId);
-
-        if (wakeLockId !== null) {
-            wakeLockId.release();
-            wakeLockId = null;
-        }
         fitEncoder.stopActivity("cycling", "virtualActivity")
         activityFitData.value = fitEncoder.export()
     }

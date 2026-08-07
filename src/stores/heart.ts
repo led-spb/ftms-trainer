@@ -8,10 +8,12 @@ export const useHeartStore = defineStore('heart', () => {
     const bluetoothDevice = ref();
 
     const heartRate = ref<number|null>(null)
+    const connectingState = ref<boolean>(false)
 
     const isConnected = computed(() => {
         return bluetoothDevice.value != null && bluetoothDevice.value.gatt.connected;
     })
+    const isConnecting = computed(() => connectingState.value )
 
     const deviceName = computed(() => {
         return isConnected.value ? bluetoothDevice.value.name : null;
@@ -34,22 +36,31 @@ export const useHeartStore = defineStore('heart', () => {
     }
 
     async function selectDevice(){
-        const device = await (navigator as any).bluetooth.requestDevice({
-            filters: [
-                { services: [HRM_SERVICE_UUID, ] }
-            ],
-            optionalServices: []
-        });
+        connectingState.value = true
+        try{
+            const device = await (navigator as any).bluetooth.requestDevice({
+                filters: [
+                    { services: [HRM_SERVICE_UUID, ] }
+                ],
+                optionalServices: []
+            });
 
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService(HRM_SERVICE_UUID);
-        const hrmChar = await service.getCharacteristic(HRM_CHARACTERISTIC_UUID);
+            const server = await device.gatt.connect();
+            device.addEventListener('gattserverdisconnected', () => {
+                console.log(`${device.name} disconnected`)
+                bluetoothDevice.value = null
+                heartRate.value = null
+            })
 
-        await hrmChar.startNotifications();
-
-        hrmChar.addEventListener('characteristicvaluechanged', onHrmDataChanged);
-        bluetoothDevice.value = device;
+            const service = await server.getPrimaryService(HRM_SERVICE_UUID);
+            const hrmChar = await service.getCharacteristic(HRM_CHARACTERISTIC_UUID);
+            await hrmChar.startNotifications();
+            hrmChar.addEventListener('characteristicvaluechanged', onHrmDataChanged);
+            bluetoothDevice.value = device;
+        } finally {
+            connectingState.value = false
+        }
     }
     
-    return { selectDevice, deviceName, isConnected, heartRate };
+    return { selectDevice, deviceName, isConnected, isConnecting, heartRate };
 })

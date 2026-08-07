@@ -2,8 +2,8 @@ import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router
 
 
 const router = createRouter({
-  // history: createWebHistory(import.meta.env.BASE_URL),
-  history: createWebHashHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
+  //history: createWebHashHistory(),
   routes: [
     {
       path: '/',
@@ -11,8 +11,8 @@ const router = createRouter({
       component: () => import('../pages/Home.vue'),
     },
     { 
-      path: '/fit',
-      name: 'fit',
+      path: '/analyze',
+      name: 'analyze',
       component: () => import('../pages/Analyze.vue'),
     },
   ],

@@ -1,6 +1,5 @@
 import {Encoder, Profile, Utils, Decoder, Stream, type FitMessages, type RecordMesg} from '@garmin/fitsdk'
 
-const semicirclesPerMeter = 107.173
 const semicirclesPerDegree = Math.pow(2,31)/180
 
 
@@ -163,5 +162,4 @@ export class FitDecoder {
             return value;
         })
     }
-
 }

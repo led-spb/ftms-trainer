@@ -64,7 +64,7 @@
           drag: {
             enabled: true,
           },
-          mode: 'xy',  
+          mode: 'x',  
         }
       },
     },

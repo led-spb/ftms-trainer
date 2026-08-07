@@ -110,6 +110,15 @@ export const useTrainerStore = defineStore('trainer', () => {
         });
 
         const server = await device.gatt.connect();
+        device.addEventListener('gattserverdisconnected', () => {
+            console.log(`${device.name} disconnected`)
+            bluetoothDevice.value = null
+
+            speed.value = null
+            power.value = null
+            cadence.value = null
+        })
+
         const service = await server.getPrimaryService(FTMS_SERVICE_UUID);
 
         // request trainer control
