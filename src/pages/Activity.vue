@@ -11,9 +11,7 @@
   const followFitFile = ref()
 
   const toastManager = useToast()
-
   const isDebug = computed(() => import.meta.env.DEV)
-
   const defaultGeoPathStrategy = new NullPathStrategy()
 
   let geoPathStrategy: GeoPathStrategy = defaultGeoPathStrategy
@@ -31,18 +29,6 @@
     }
   }
 
-  function changeTrainerGrade(delta: number){
-    trainer.setBikeSimulation(trainer.grade + delta)
-      .catch((error: Error) => {
-        console.error(error)
-        toastManager.add({
-          title: "Trainer control error",
-          description: `${error.name}: ${error.message}`,
-          color: "error",
-        })
-      })
-  }
-
   function startActitvitySession(){
     const metrics = computed(() => { 
       return {
@@ -54,7 +40,6 @@
       }
     })
 
-    changeTrainerGrade(trainer.grade)
     activity.startActivity(metrics, geoPathStrategy)
     WakeLockManager.requestLock()
   }
@@ -104,13 +89,13 @@
 
 <template>
   <UContainer>
-    <div class="flex justify-center mb-4 mt-4">
-      <UButton class="mr-2 text-lg" loading-auto @click="connectDevice(trainer)" :disabled="trainer.isConnected"><template v-if="trainer.isConnected">{{ trainer.deviceName }}</template><template v-else>Connect trainer</template></UButton>
-      <UButton class="mr-2 text-lg" loading-auto @click="connectDevice(heart)" :disabled="heart.isConnected"><template v-if="heart.isConnected">{{ heart.deviceName }}</template><template v-else>Connect HRM</template></UButton>
-      <UButton class="mr-2 text-lg" @click="startActitvitySession()" :disabled="!trainer.isConnected && !isDebug" v-if="!activity.isStarted">Start</UButton>
-      <UButton class="mr-2 text-lg" @click="stopActivitySession()" color="warning" v-if="activity.isStarted">Stop</UButton>
-      <UButton class="mr-2 text-lg" @click="exportActivityData()" v-if="!activity.isStarted && activity.activityFitData">Download</UButton>
-      <UFileUpload v-model="followFitFile" v-on:change="loadFollowFile()" ></UFileUpload>
+    <div class="flex justify-center mb-4 mt-4 full-w">
+      <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(trainer)" :disabled="trainer.isConnected"><template v-if="trainer.isConnected">{{ trainer.deviceName }}</template><template v-else>Trainer</template></UButton>
+      <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(heart)" :disabled="heart.isConnected"><template v-if="heart.isConnected">{{ heart.deviceName }}</template><template v-else>HRM</template></UButton>
+      <UButton variant="outline" class="mr-2 text-lg" @click="startActitvitySession()" :disabled="!trainer.isConnected && !isDebug" v-if="!activity.isStarted">Start</UButton>
+      <UButton variant="outline" class="mr-2 text-lg" @click="stopActivitySession()" color="warning" v-if="activity.isStarted">Stop</UButton>
+      <UButton variant="outline" class="mr-2 text-lg" @click="exportActivityData()" v-if="!activity.isStarted && activity.activityFitData">Download</UButton>
+      <UFileUpload variant="button" v-model="followFitFile" v-on:change="loadFollowFile()" ></UFileUpload>
     </div>
 
     <UForm class="mb-6">
@@ -124,9 +109,9 @@
         <div class="text-3xl">{{ heart.heartRate != null  ? heart.heartRate.toFixed(0) : 'n/a' }} bpm</div>
       </UFormField>
       <UFormField class="text-3xl mb-1" label="Grade" orientation="horizontal" v-if="trainer.isConnected || isDebug">
-        <UButton icon="i-lucide-plus" size="xl" class="mr-2" @click="changeTrainerGrade(+0.1)"></UButton>
+        <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1"></UButton>
         <span class="text-3xl">{{ trainer.grade.toFixed(1) }} %</span>
-        <UButton icon="i-lucide-minus" size="xl" class="ml-2" @click="changeTrainerGrade(-0.1)"></UButton>
+        <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1"></UButton>
       </UFormField>
     </UForm>
 

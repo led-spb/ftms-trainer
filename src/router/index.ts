@@ -8,7 +8,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../pages/Home.vue'),
+      component: () => import('../pages/Activity.vue'),
     },
     { 
       path: '/analyze',

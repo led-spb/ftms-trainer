@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
 const FTMS_SERVICE_UUID = '00001826-0000-1000-8000-00805f9b34fb';
@@ -10,8 +10,6 @@ const SET_INDOOR_BIKE_SIMULATION_OP_CODE = 0x11;
 
 
 export const useTrainerStore = defineStore('trainer', () => {
-    const targetGrade = ref(0.5);
-
     const windValue = 0;
     const crrValue = 0.0060;
     const cwValue = 0.33;
@@ -24,13 +22,17 @@ export const useTrainerStore = defineStore('trainer', () => {
     const power = ref<number|null>(null);
     const cadence = ref<number|null>(null);
 
-    const grade = computed(() => targetGrade.value)
+    const grade = ref(0.5)
   
     const isConnected = computed(() => {
         return bluetoothDevice.value != null && bluetoothDevice.value.gatt.connected;
     })
     const deviceName = computed(() => {
         return isConnected.value ? bluetoothDevice.value.name : null;
+    })
+
+    watch(grade, async (newGrade) => {
+        await setBikeSimulation(newGrade)
     })
 
     async function setBikeSimulation(grade: number){
@@ -44,9 +46,7 @@ export const useTrainerStore = defineStore('trainer', () => {
             command.setUint8(6, cwValue*100);
 
             await controlPointChar.writeValue(command.buffer)
-            targetGrade.value = grade
         }
-        return targetGrade
     }
 
     let firstEventTimestamp = 0;
@@ -132,9 +132,11 @@ export const useTrainerStore = defineStore('trainer', () => {
         indoorBikeDataChar.addEventListener('characteristicvaluechanged', onBikeDataChanged);
         await indoorBikeDataChar.startNotifications();
 
+        setBikeSimulation(grade.value)
+
         bluetoothDevice.value = device
         return device
     }
     
-    return { selectDevice, setBikeSimulation, deviceName, isConnected, speed, power, cadence, grade }
+    return { selectDevice, deviceName, isConnected, speed, power, cadence, grade }
 })
