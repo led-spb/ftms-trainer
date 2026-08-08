@@ -40,7 +40,12 @@
       }
     })
 
-    activity.startActivity(metrics, geoPathStrategy)
+    const trainerGrade = computed({
+      get: () => trainer.grade,
+      set: (value) => trainer.grade = value
+    })
+
+    activity.startActivity(metrics, trainerGrade, geoPathStrategy)
     WakeLockManager.requestLock()
   }
 

@@ -3,6 +3,7 @@ export interface GeoPoint {
     longitude: number
     distance: number
     altitude?: number
+    grade?: number
 }
 
 export interface GeoPathStrategy {
@@ -45,7 +46,23 @@ export class FollowPathStrategy implements GeoPathStrategy {
     public setFollowPathPoints(points: GeoPoint[]){
         this.targetPoints = points
 
-        console.log(`followTrack loaded ${points.length} points`)
+        // calculate gradients for every point
+        this.targetPoints.forEach((currElement, index) => {
+            if( index < points.length-1){
+                const nextElement = points[index+1]!;
+
+                const deltaDistance = Math.abs(nextElement.distance - currElement.distance)
+
+                const nextAltitude = nextElement.altitude || currElement.altitude
+                const currAltitude = currElement.altitude || nextElement.altitude
+                if( nextAltitude != null && currAltitude != null && deltaDistance != 0){
+                    const grade = (nextAltitude-currAltitude)/deltaDistance * 100
+                    currElement.grade = grade
+                }
+            }
+        })
+
+        console.log(`followTrack loaded ${this.targetPoints.length} points`)
     }
 
     private findClosest(distance :number): any[]{
@@ -84,12 +101,12 @@ export class FollowPathStrategy implements GeoPathStrategy {
 
         // linear interpolate 
         const progress = Math.abs(distance - pointA.distance)/(Math.abs(pointB.distance - pointA.distance))
-        // console.log(`${distance} -> ${pointA.distance}-${pointB.distance}`)
 
         const latitude = pointA.latitude + (pointB.latitude-pointA.latitude)*progress
         const longitude = pointA.longitude + (pointB.longitude-pointA.longitude)*progress
         const altitude = pointA.altitude + (pointB.altitude-pointA.altitude)*progress
+        const grade = pointA.grade + (pointB.grade-pointA.grade)*progress
 
-        return {longitude, latitude, distance, altitude}
+        return {longitude, latitude, distance, altitude, grade}
     }
 }

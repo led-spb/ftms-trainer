@@ -17,14 +17,14 @@ export const useActivityStore = defineStore('activity', () => {
 
     let timerId: any = null
 
-    function startActivity(metrics: Ref, geoPathStrategy: GeoPathStrategy|null){
+    function startActivity(metrics: Ref, trainerGrade: Ref, geoPathStrategy: GeoPathStrategy|null){
         started.value = true
 
         distance.value = 0
         elapsed.value = 0
 
         climb.value = 0
-        let altitude = 0
+        let altitude: number|null = null
         let longitude: number|null = null
         let latitude: number|null = null
 
@@ -43,24 +43,32 @@ export const useActivityStore = defineStore('activity', () => {
             const value = metrics.value
 
             const deltaDistance = value.speed/3.6 * elapsedTime
-            const deltaAltitude = deltaDistance*value.grade/100
-
-            altitude += deltaAltitude
-
             distance.value += deltaDistance
-            climb.value += deltaAltitude > 0 ? deltaAltitude : 0
 
-            if( geoPathStrategy ){
+            // Calculate new altitude from grade
+            let newAltitude = (altitude ?? 0) + deltaDistance*value.grade/100
+ 
+             if( geoPathStrategy ){
                 try {
                     const geoPoint = geoPathStrategy.geoPointByDistance(distance.value)
-                    latitude = geoPoint ? geoPoint.latitude : null
-                    longitude = geoPoint ? geoPoint.longitude : null
-                    if( geoPoint && geoPoint.altitude != null )
-                        altitude = geoPoint.altitude
+                    if( geoPoint != null){
+                        latitude = geoPoint ? geoPoint.latitude : null
+                        longitude = geoPoint ? geoPoint.longitude : null
+
+                        if( geoPoint.grade != null)
+                            trainerGrade.value = Math.floor(geoPoint.grade*10)/10
+                        if( geoPoint.altitude != null )
+                            newAltitude = geoPoint.altitude
+                    }
                 } catch (err) {
                     console.error(err)
                 }
             }
+
+            const deltaAltitude = newAltitude - (altitude ?? newAltitude)
+            climb.value += deltaAltitude > 0 ? deltaAltitude : 0
+
+            altitude = newAltitude
 
             fitEncoder.addActivityRecord(
                 distance.value, value.speed/3.6, altitude,

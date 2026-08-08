@@ -142,9 +142,6 @@ export class FitDecoder {
         const stream = Stream.fromArrayBuffer(fileContent)
         const decoder = new Decoder(stream);
 
-        console.log("isFIT (instance method): " + decoder.isFIT());
-        console.log("checkIntegrity: " + decoder.checkIntegrity());
-
         //this.messages, errors
         this.messages = decoder.read().messages;
     }
