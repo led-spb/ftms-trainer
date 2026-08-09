@@ -8,7 +8,6 @@ const CONTORL_POINT_CHAR = '00002ad9-0000-1000-8000-00805f9b34fb';
 const REQUEST_CONTROL_OP_CODE = 0x00;
 const SET_INDOOR_BIKE_SIMULATION_OP_CODE = 0x11;
 
-
 export const useTrainerStore = defineStore('trainer', () => {
     const windValue = 0;
     const crrValue = 0.0060;
@@ -18,8 +17,8 @@ export const useTrainerStore = defineStore('trainer', () => {
     let controlPointChar: any = null;
     let indoorBikeDataChar = null;
 
-    const speed = ref<number|null>(null);
-    const power = ref<number|null>(null);
+    const speed = ref<number|null>(import.meta.env.DEV ? 24.7 : null);
+    const power = ref<number|null>(import.meta.env.DEV ? 156 : null);
     const cadence = ref<number|null>(null);
 
     const grade = ref(0.5)

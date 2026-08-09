@@ -1,9 +1,8 @@
 import { computed, ref, type Ref } from 'vue'
 import { defineStore } from 'pinia'
-
 import { FitEncoder } from '@/lib/fit'
+import { NullPathStrategy, type GeoPathStrategy } from '@/lib/geo'
 
-import { type GeoPathStrategy } from '@/lib/geo'
 
 export const useActivityStore = defineStore('activity', () => {
     const started = ref(false)
@@ -11,20 +10,40 @@ export const useActivityStore = defineStore('activity', () => {
     const distance = ref(0)
     const climb = ref(0)
     const elapsed = ref(0)
+    const altitude = ref<number|null>(null)
     const activityFitData = ref<Uint8Array>()
 
     const fitEncoder = new FitEncoder()
 
+    let geoPathStrategy: GeoPathStrategy = new NullPathStrategy();
+
+    const altitudeProfile = computed(() => {
+        const startPoint: number = distance.value >= 1000 ? Math.trunc(distance.value/1000-1)*1000 : 0
+        const altitudes = []
+
+        for (let distance = startPoint; distance-startPoint < 5000; distance+=100) {
+            const point = geoPathStrategy.geoPointByDistance(distance)
+            if( point && point.altitude != null){
+                altitudes.push({x: distance/1000, y: point.altitude})
+            }
+        }
+        return altitudes;
+    })
+
     let timerId: any = null
 
-    function startActivity(metrics: Ref, trainerGrade: Ref, geoPathStrategy: GeoPathStrategy|null){
+    function setGeoPathStrategy(strategy: GeoPathStrategy){
+        geoPathStrategy = strategy 
+    }
+
+    function startActivity(metrics: Ref, trainerGrade: (value: number) => any){
         started.value = true
 
         distance.value = 0
         elapsed.value = 0
 
         climb.value = 0
-        let altitude: number|null = null
+        altitude.value  = null
         let longitude: number|null = null
         let latitude: number|null = null
 
@@ -46,32 +65,30 @@ export const useActivityStore = defineStore('activity', () => {
             distance.value += deltaDistance
 
             // Calculate new altitude from grade
-            let newAltitude = (altitude ?? 0) + deltaDistance*value.grade/100
+            let newAltitude = (altitude.value ?? 0) + deltaDistance*value.grade/100
  
-             if( geoPathStrategy ){
-                try {
-                    const geoPoint = geoPathStrategy.geoPointByDistance(distance.value)
-                    if( geoPoint != null){
-                        latitude = geoPoint ? geoPoint.latitude : null
-                        longitude = geoPoint ? geoPoint.longitude : null
+            try {
+                const geoPoint = geoPathStrategy.geoPointByDistance(distance.value)
+                if( geoPoint != null){
+                    latitude = geoPoint ? geoPoint.latitude : null
+                    longitude = geoPoint ? geoPoint.longitude : null
 
-                        if( geoPoint.grade != null)
-                            trainerGrade.value = Math.floor(geoPoint.grade*10)/10
-                        if( geoPoint.altitude != null )
-                            newAltitude = geoPoint.altitude
-                    }
-                } catch (err) {
-                    console.error(err)
+                    if( geoPoint.grade != null)
+                        trainerGrade( Math.floor(geoPoint.grade*10)/10 )
+                    if( geoPoint.altitude != null )
+                        newAltitude = geoPoint.altitude
                 }
+            } catch (err) {
+                console.error(err)
             }
 
-            const deltaAltitude = newAltitude - (altitude ?? newAltitude)
+            const deltaAltitude = newAltitude - (altitude.value ?? newAltitude)
             climb.value += deltaAltitude > 0 ? deltaAltitude : 0
 
-            altitude = newAltitude
+            altitude.value = newAltitude
 
             fitEncoder.addActivityRecord(
-                distance.value, value.speed/3.6, altitude,
+                distance.value, value.speed/3.6, altitude.value,
                 value.power, value.cadence, value.heartRate,
                 latitude, longitude, 
             )
@@ -91,5 +108,5 @@ export const useActivityStore = defineStore('activity', () => {
         return started.value
     })
 
-    return { isStarted, startActivity, stopActivity, activityFitData, distance, elapsed, climb };
+    return { isStarted, setGeoPathStrategy, startActivity, stopActivity, altitudeProfile, activityFitData, distance, altitude, elapsed, climb };
 })

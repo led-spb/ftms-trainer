@@ -1,20 +1,50 @@
 <script setup lang="ts">
   import { useTrainerStore, useHeartStore, useActivityStore } from '@/stores';
   import { ref, computed } from 'vue'
-  import { FitDecoder } from '@/lib/fit';
-  import { FollowPathStrategy, NullPathStrategy, type GeoPathStrategy } from '@/lib/geo';
   import { WakeLockManager } from '@/lib/wake';
+
+  import Chart, { type ChartData, type ChartOptions, type CoreChartOptions, type ElementChartOptions, type LineControllerChartOptions, type PluginChartOptions } from 'chart.js/auto';
+  //import zoomPlugin from 'chartjs-plugin-zoom';
+  //Chart.register(zoomPlugin)  
+  //import type { ChartData} from 'chart.js/auto';
+  import {Scatter} from 'vue-chartjs';
 
   const trainer = useTrainerStore()
   const heart = useHeartStore()
   const activity = useActivityStore()
-  const followFitFile = ref()
 
   const toastManager = useToast()
   const isDebug = computed(() => import.meta.env.DEV)
-  const defaultGeoPathStrategy = new NullPathStrategy()
 
-  let geoPathStrategy: GeoPathStrategy = defaultGeoPathStrategy
+
+  const altitudeChartData = computed<ChartData<"scatter">>(() => {
+    return {
+      datasets: [
+        {
+          data: [{x: activity.distance/1000, y: activity.altitude}],
+          showLine: false,
+          pointStyle: 'circle', pointRadius: 5,
+          animation: false,
+          pointBackgroundColor: 'red'
+        },
+        {
+          data: activity.altitudeProfile,
+          showLine: true,
+          tension: 0.5,
+          pointStyle: false,
+          borderColor: 'rgba(54, 162, 235, 1)',
+          animation: false,
+        },        
+      ]
+    }
+  })
+
+  const altitudeChartOptions = {
+      responsive: true,
+      plugins: {
+        legend: {display: false},
+      },
+  }
 
   async function connectDevice(device: any){
     try{
@@ -39,13 +69,7 @@
         heartRate: heart.heartRate
       }
     })
-
-    const trainerGrade = computed({
-      get: () => trainer.grade,
-      set: (value) => trainer.grade = value
-    })
-
-    activity.startActivity(metrics, trainerGrade, geoPathStrategy)
+    activity.startActivity(metrics, (value) => { trainer.grade = value })
     WakeLockManager.requestLock()
   }
 
@@ -68,39 +92,17 @@
     window.URL.revokeObjectURL(url);    
   }
 
-  async function loadFollowFile(){
-    const file: File = followFitFile.value
-    if( file == null ){
-      geoPathStrategy = defaultGeoPathStrategy
-      return
-    }
-    const decoder = new FitDecoder()
-    decoder.import(await file.arrayBuffer())
-
-    const strategy = new FollowPathStrategy()
-    strategy.setFollowPathPoints(
-      decoder.getRecords().map( item => {
-        return {
-          latitude: item.positionLat || 0,
-          longitude: item.positionLong || 0,
-          distance: item.distance || 0,
-          altitude: item.enhancedAltitude
-        }
-      })
-    )
-    geoPathStrategy = strategy
-  }
 </script>
 
 <template>
   <UContainer>
-    <div class="flex justify-center mb-4 mt-4 full-w">
+    <div class="flex justify-center mb-4 full-w">
       <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(trainer)" :disabled="trainer.isConnected"><template v-if="trainer.isConnected">{{ trainer.deviceName }}</template><template v-else>Trainer</template></UButton>
       <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(heart)" :disabled="heart.isConnected"><template v-if="heart.isConnected">{{ heart.deviceName }}</template><template v-else>HRM</template></UButton>
       <UButton variant="outline" class="mr-2 text-lg" @click="startActitvitySession()" :disabled="!trainer.isConnected && !isDebug" v-if="!activity.isStarted">Start</UButton>
       <UButton variant="outline" class="mr-2 text-lg" @click="stopActivitySession()" color="warning" v-if="activity.isStarted">Stop</UButton>
       <UButton variant="outline" class="mr-2 text-lg" @click="exportActivityData()" v-if="!activity.isStarted && activity.activityFitData">Download</UButton>
-      <UFileUpload variant="button" v-model="followFitFile" v-on:change="loadFollowFile()" ></UFileUpload>
+      <!-- <UFileUpload variant="button" v-model="followFitFile" v-on:change="loadFollowFile()" ></UFileUpload> -->
     </div>
 
     <UForm class="mb-6">
@@ -134,8 +136,8 @@
       </UFormField>
     </UForm>
   </UContainer>
-
-  <UContainer>
-
+  
+  <UContainer class="mt-4">
+    <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
 </template>

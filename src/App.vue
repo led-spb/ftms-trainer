@@ -3,8 +3,8 @@
 
 <template>
   <UApp>
-    <UMain>
-      <RouterView />
+    <UMain  class="mt-4">
+      <RouterView/>
     </UMain>
   </UApp>
 </template>
