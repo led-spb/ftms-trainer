@@ -9,6 +9,8 @@
     const activity = useActivityStore()
     const routes = useRoutesStore()
 
+    const fitFile = ref()
+
     const displayFollowState = ref(false)
     const selectedRoute = ref<Route>()
 
@@ -37,6 +39,9 @@
         })
     })
 
+    async function loadFitFile(){
+        selectedRoute.value = await routes.loadRouteFromFile(fitFile.value)
+    }
 </script>
 
 
@@ -48,7 +53,10 @@
         </div>
         <div v-if="displayFollowState">
             <UListbox v-model="selectedRoute" value-key="value" :items="routesList" class="mt-4" size="xl"/>
-            <div class="flex items-center justify-center mt-4"><UButton :disabled="!selectedRoute" @click="goRouteRide(selectedRoute?.waypoints)">Go ride</UButton></div>
+            <div class="flex items-center justify-center mt-4">
+                <UFileUpload class="mr-2" v-on:change="loadFitFile()" v-model="fitFile" variant="button" label="Load from .fit"></UFileUpload>
+                <UButton variant="outline" :disabled="!selectedRoute" @click="goRouteRide(selectedRoute?.waypoints)">Go ride</UButton>
+            </div>
         </div>
     </UContainer>
 </template>

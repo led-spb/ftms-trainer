@@ -3,15 +3,24 @@
   import { ref, computed } from 'vue'
   import { WakeLockManager } from '@/lib/wake';
 
-  import Chart, { type ChartData, type ChartOptions, type CoreChartOptions, type ElementChartOptions, type LineControllerChartOptions, type PluginChartOptions } from 'chart.js/auto';
-  //import zoomPlugin from 'chartjs-plugin-zoom';
-  //Chart.register(zoomPlugin)  
-  //import type { ChartData} from 'chart.js/auto';
+  import {type ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
 
   const trainer = useTrainerStore()
   const heart = useHeartStore()
+
   const activity = useActivityStore()
+  
+  activity.attachSensors(
+    computed(() => trainer.speed ?? 0),
+    computed(() => trainer.power),
+    computed(() => trainer.cadence),
+    computed(() => heart.heartRate),
+    computed({
+        get: () => trainer.grade,
+        set: (value: number) => { trainer.grade = value }
+    })
+  )
 
   const toastManager = useToast()
   const isDebug = computed(() => import.meta.env.DEV)
@@ -30,7 +39,7 @@
         {
           data: activity.altitudeProfile,
           showLine: true,
-          tension: 0.5,
+          tension: 0.3,
           pointStyle: false,
           borderColor: 'rgba(54, 162, 235, 1)',
           animation: false,
@@ -39,12 +48,20 @@
     }
   })
 
-  const altitudeChartOptions = {
+  const altitudeChartOptions = computed(() => {
+    return {
       responsive: true,
       plugins: {
         legend: {display: false},
       },
-  }
+      scales: {
+        x: {
+          min: Math.trunc(activity.distance/1000)-1,
+          max: Math.trunc(activity.distance/1000)+3,          
+        }
+      }
+    }
+  })
 
   async function connectDevice(device: any){
     try{
@@ -60,16 +77,17 @@
   }
 
   function startActitvitySession(){
-    const metrics = computed(() => { 
-      return {
-        speed: trainer.speed,
-        power: trainer.power,
-        cadence: trainer.cadence,
-        grade: trainer.grade,
-        heartRate: heart.heartRate
-      }
-    })
-    activity.startActivity(metrics, (value) => { trainer.grade = value })
+    // const metrics = computed(() => { 
+    //   return {
+    //     speed: trainer.speed,
+    //     power: trainer.power,
+    //     cadence: trainer.cadence,
+    //     grade: trainer.grade,
+    //     heartRate: heart.heartRate
+    //   }
+    // })
+    // activity.startActivity(metrics, (value) => { trainer.grade = value })
+    activity.startActivity()
     WakeLockManager.requestLock()
   }
 
@@ -127,17 +145,17 @@
         <div class="text-4xl">{{ (activity.distance/1000).toFixed(2) }} km</div>
       </UFormField>
 
-      <UFormField class="text-4xl mb-1" label="Climb" orientation="horizontal">
-        <div class="text-4xl">{{ activity.climb.toFixed(1) }} m</div>
-      </UFormField>
-
       <UFormField label="Time" orientation="horizontal" class="text-4xl mb-1">
         <div class="text-4xl">{{ Math.trunc(activity.elapsed/3600).toString().padStart(2, '0') }}:{{ (Math.trunc(activity.elapsed/60)%60).toString().padStart(2, '0') }}:{{ Math.trunc(activity.elapsed%60).toString().padStart(2, '0') }}</div>
       </UFormField>
     </UForm>
   </UContainer>
-  
+
   <UContainer class="mt-4">
+  </UContainer>
+  
+  <UContainer class="mt-4" v-if="activity.altitudeProfile.length > 0">
+    <USlider class="mb-4" v-model="activity.distance" :max="activity.altitudeProfile.slice(-1).pop().x * 1000" :disabled="!isDebug"></USlider>
     <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
 </template>

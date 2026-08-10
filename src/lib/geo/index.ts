@@ -8,6 +8,7 @@ export interface GeoPoint {
 
 export interface GeoPathStrategy {
     geoPointByDistance(distance: number): GeoPoint|null;
+    waypoints(): GeoPoint[];
 }
 
 const degreesPerMeter = 1 / 111000;
@@ -17,6 +18,10 @@ export class LinePathStrategy implements GeoPathStrategy {
 
     constructor (){
         this.startPoint = {latitude: 0, longitude: 0, altitude: 0, distance: 0}
+    }
+
+    public waypoints(): GeoPoint[]{
+        return []
     }
 
     public geoPointByDistance(distance: number): GeoPoint {
@@ -34,6 +39,9 @@ export class NullPathStrategy implements GeoPathStrategy{
         return null
     }
 
+    public waypoints(): GeoPoint[]{
+        return []
+    }
 }
 
 export class FollowPathStrategy implements GeoPathStrategy {
@@ -44,25 +52,33 @@ export class FollowPathStrategy implements GeoPathStrategy {
     }
 
     public setFollowPathPoints(points: GeoPoint[]){
-        this.targetPoints = points
-
-        // calculate gradients for every point
-        this.targetPoints.forEach((currElement, index) => {
-            if( index < points.length-1){
-                const nextElement = points[index+1]!;
-
-                const deltaDistance = Math.abs(nextElement.distance - currElement.distance)
-
-                const nextAltitude = nextElement.altitude || currElement.altitude
-                const currAltitude = currElement.altitude || nextElement.altitude
-                if( nextAltitude != null && currAltitude != null && deltaDistance != 0){
-                    const grade = (nextAltitude-currAltitude)/deltaDistance * 100
-                    currElement.grade = grade
-                }
-            }
+        const data = points.filter((item, index) => {
+            if( index < points.length-1 && item.distance == points[index+1]?.distance)
+                return false
+            return true
         })
 
-        console.log(`followTrack loaded ${this.targetPoints.length} points`)
+        data.reduceRight(
+            (next, current) => {
+                if( next ){
+                    const deltaDistance = Math.abs(next.distance - current.distance)
+                    if( current.altitude == null )
+                        current.altitude = next.altitude
+                    if( next.altitude == null || current.altitude == null ){
+                        current.grade = next.grade
+                    }else{
+                        current.grade = (next.altitude - current.altitude) / deltaDistance * 100
+                    }
+                }
+                return current
+            },
+            data.slice(-1).pop()
+        )
+
+        console.log(`followTrack loaded ${data.length} points`)
+        console.log(JSON.stringify(data.map(item => { return {distance: item.distance, longitude: item.longitude, latitude: item.latitude, altitude: item.altitude}}) ))
+
+        this.targetPoints = data
     }
 
     private findClosest(distance :number): any[]{
@@ -99,8 +115,11 @@ export class FollowPathStrategy implements GeoPathStrategy {
         const pointA = nearestPoints[0]
         const pointB = nearestPoints[1]
 
+        if( pointA.distance == pointB.distance )
+            return pointA
+
         // linear interpolate 
-        const progress = Math.abs(distance - pointA.distance)/(Math.abs(pointB.distance - pointA.distance))
+        const progress = (distance - pointA.distance)/(Math.abs(pointB.distance - pointA.distance))
 
         const latitude = pointA.latitude + (pointB.latitude-pointA.latitude)*progress
         const longitude = pointA.longitude + (pointB.longitude-pointA.longitude)*progress
@@ -108,5 +127,9 @@ export class FollowPathStrategy implements GeoPathStrategy {
         const grade = pointA.grade + (pointB.grade-pointA.grade)*progress
 
         return {longitude, latitude, distance, altitude, grade}
+    }
+
+    public waypoints(): GeoPoint[]{
+        return this.targetPoints
     }
 }

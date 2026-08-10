@@ -1,99 +1,100 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, ref, type Ref, type ComputedRef, type WritableComputedRef, watch, watchEffect } from 'vue'
 import { defineStore } from 'pinia'
 import { FitEncoder } from '@/lib/fit'
-import { NullPathStrategy, type GeoPathStrategy } from '@/lib/geo'
+import { NullPathStrategy, type GeoPoint, type GeoPathStrategy } from '@/lib/geo'
 
 
 export const useActivityStore = defineStore('activity', () => {
     const started = ref(false)
 
     const distance = ref(0)
-    const climb = ref(0)
     const elapsed = ref(0)
     const altitude = ref<number|null>(null)
+    const longitude = ref<number|null>(null)
+    const latitude = ref<number|null>(null)
+
     const activityFitData = ref<Uint8Array>()
 
+    // metrics from trainer/bike/hrm
+    let speed = ref<number>();
+    let power = ref<number|null>();
+    let heartRate = ref<number|null>();
+    let cadence = ref<number|null>();
+    let grade = ref<number>();
+
+
     const fitEncoder = new FitEncoder()
+    const geoPathStrategy = ref(new NullPathStrategy());
 
-    let geoPathStrategy: GeoPathStrategy = new NullPathStrategy();
+    function attachSensors(speedSensor: ComputedRef<number>, powerSensor: ComputedRef<number|null>, cadenceSensor: ComputedRef<number|null>, heartRateSensor: ComputedRef<number|null>, gradeSensor: Ref<number>){
+        speed = speedSensor
+        power = powerSensor
+        cadence = cadenceSensor
+        heartRate = heartRateSensor
+        grade = gradeSensor
+    }
 
-    const altitudeProfile = computed(() => {
-        const startPoint: number = distance.value >= 1000 ? Math.trunc(distance.value/1000-1)*1000 : 0
-        const altitudes = []
+    const altitudeProfile = computed<any[]>(() => {
+        return geoPathStrategy.value.waypoints().map( item => {
+            return {x: item.distance/1000, y: item.altitude}
+        })
+    })
 
-        for (let distance = startPoint; distance-startPoint < 5000; distance+=100) {
-            const point = geoPathStrategy.geoPointByDistance(distance)
-            if( point && point.altitude != null){
-                altitudes.push({x: distance/1000, y: point.altitude})
+    let activityTimestamp = (new Date()).getTime()/1000
+
+
+    watch(distance, (value, oldValue) => {
+        //const deltaDistance: number = value - oldValue
+        const geoPoint = geoPathStrategy.value.geoPointByDistance(value)
+        if( geoPoint ){
+            latitude.value = geoPoint ? geoPoint.latitude : null
+            longitude.value = geoPoint ? geoPoint.longitude : null
+
+            if( geoPoint.altitude != null ){
+                altitude.value = geoPoint.altitude
+            }
+            if( geoPoint.grade != null){
+                grade.value = Math.floor(geoPoint.grade*10)/10
             }
         }
-        return altitudes;
+        // store track point
+        if( started.value ){
+            fitEncoder.addActivityRecord(
+                distance.value, (speed.value ?? 0 ) / 3.6,
+                altitude.value, power.value, cadence.value, heartRate.value,
+                latitude.value, longitude.value
+            )
+        }
     })
 
     let timerId: any = null
 
     function setGeoPathStrategy(strategy: GeoPathStrategy){
-        geoPathStrategy = strategy 
+        geoPathStrategy.value = strategy 
     }
 
-    function startActivity(metrics: Ref, trainerGrade: (value: number) => any){
-        started.value = true
+    function startActivity(){
+        activityTimestamp = (new Date()).getTime()/1000
 
         distance.value = 0
         elapsed.value = 0
-
-        climb.value = 0
         altitude.value  = null
-        let longitude: number|null = null
-        let latitude: number|null = null
+        longitude.value = null
+        latitude.value = null
 
+        started.value = true
         fitEncoder.beginActivity()
-        console.log(geoPathStrategy)
 
-        let activityTimestamp = (new Date()).getTime()/1000
-
-        // Collect data every second
         timerId = setInterval(() => {
             const nowTimestamp = (new Date()).getTime()/1000 
             const elapsedTime = nowTimestamp - activityTimestamp
 
             elapsed.value += elapsedTime
-
-            const value = metrics.value
-
-            const deltaDistance = value.speed/3.6 * elapsedTime
+            // delta distance
+            const deltaDistance = (speed.value ?? 0)/3.6 * elapsedTime
             distance.value += deltaDistance
 
-            // Calculate new altitude from grade
-            let newAltitude = (altitude.value ?? 0) + deltaDistance*value.grade/100
- 
-            try {
-                const geoPoint = geoPathStrategy.geoPointByDistance(distance.value)
-                if( geoPoint != null){
-                    latitude = geoPoint ? geoPoint.latitude : null
-                    longitude = geoPoint ? geoPoint.longitude : null
-
-                    if( geoPoint.grade != null)
-                        trainerGrade( Math.floor(geoPoint.grade*10)/10 )
-                    if( geoPoint.altitude != null )
-                        newAltitude = geoPoint.altitude
-                }
-            } catch (err) {
-                console.error(err)
-            }
-
-            const deltaAltitude = newAltitude - (altitude.value ?? newAltitude)
-            climb.value += deltaAltitude > 0 ? deltaAltitude : 0
-
-            altitude.value = newAltitude
-
-            fitEncoder.addActivityRecord(
-                distance.value, value.speed/3.6, altitude.value,
-                value.power, value.cadence, value.heartRate,
-                latitude, longitude, 
-            )
-
-            activityTimestamp = nowTimestamp
+            activityTimestamp = (new Date()).getTime()/1000
         }, 1000)
     }
 
@@ -108,5 +109,5 @@ export const useActivityStore = defineStore('activity', () => {
         return started.value
     })
 
-    return { isStarted, setGeoPathStrategy, startActivity, stopActivity, altitudeProfile, activityFitData, distance, altitude, elapsed, climb };
+    return { isStarted, setGeoPathStrategy, attachSensors, startActivity, stopActivity, altitudeProfile, activityFitData, distance, latitude, longitude, altitude, elapsed };
 })
