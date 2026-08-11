@@ -1,11 +1,10 @@
 <script setup lang="ts">
   import { useTrainerStore, useHeartStore, useActivityStore } from '@/stores';
-  import { ref, computed } from 'vue'
+  import { computed, watch } from 'vue'
   import { WakeLockManager } from '@/lib/wake';
 
   import {type ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
-  import type { GeoPoint } from '@/lib/geo';
 
   const trainer = useTrainerStore()
   const heart = useHeartStore()
@@ -101,17 +100,34 @@
     window.URL.revokeObjectURL(url);
   }
 
+  watch(() => heart.batteryLevel, (value) => {
+    if( value != null ){
+      toastManager.add({
+        title: 'Battery level',
+        description: `${heart.deviceName} battery is ${value}%`,
+        color: value >= 50 ? "success" : value >= 20 ? "warning" : "error",
+      })
+    }
+  })
+
 </script>
 
 <template>
   <UContainer>
     <div class="flex justify-center mb-4 full-w">
-      <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(trainer)" :disabled="trainer.isConnected"><template v-if="trainer.isConnected">{{ trainer.deviceName }}</template><template v-else>Trainer</template></UButton>
-      <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(heart)" :disabled="heart.isConnected"><template v-if="heart.isConnected">{{ heart.deviceName }}</template><template v-else>HRM</template></UButton>
+      <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(trainer)" :disabled="trainer.isConnected">
+        <template v-if="trainer.isConnected">{{ trainer.deviceName }}</template>
+        <template v-else>Trainer</template>
+      </UButton>
+
+      <UButton variant="outline" class="mr-2 text-lg" loading-auto @click="connectDevice(heart)" :disabled="heart.isConnected">
+        <template v-if="heart.isConnected">{{ heart.deviceName }}</template>
+        <template v-else>HRM</template>
+      </UButton>
+
       <UButton variant="outline" class="mr-2 text-lg" @click="startActitvitySession()" :disabled="!trainer.isConnected && !isDebug" v-if="!activity.isStarted">Start</UButton>
       <UButton variant="outline" class="mr-2 text-lg" @click="stopActivitySession()" color="warning" v-if="activity.isStarted">Stop</UButton>
       <UButton variant="outline" class="mr-2 text-lg" @click="exportActivityData()" v-if="!activity.isStarted && activity.activityFitData">Download</UButton>
-      <!-- <UFileUpload variant="button" v-model="followFitFile" v-on:change="loadFollowFile()" ></UFileUpload> -->
     </div>
 
     <UForm class="mb-6">

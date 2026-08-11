@@ -4,10 +4,15 @@ import { defineStore } from 'pinia'
 const HRM_SERVICE_UUID = '0000180d-0000-1000-8000-00805f9b34fb';
 const HRM_CHARACTERISTIC_UUID = '00002a37-0000-1000-8000-00805f9b34fb';
 
+const BATTERY_SERVICE_UUID = '0000180f-0000-1000-8000-00805f9b34fb';
+const BATTERY_CHARACTERISRIC_UUID = '00002a19-0000-1000-8000-00805f9b34fb';
+
+
 export const useHeartStore = defineStore('heart', () => {
     const bluetoothDevice = ref();
 
     const heartRate = ref<number|null>(null)
+    const batteryLevel = ref<number|undefined>(undefined)
     const connectingState = ref<boolean>(false)
 
     const isConnected = computed(() => {
@@ -35,32 +40,49 @@ export const useHeartStore = defineStore('heart', () => {
         rawEvents.push(heartRateValue)
     }
 
+    async function getDeviceBatteryLevel(server :BluetoothRemoteGATTServer|undefined){
+        try{
+            const batteryService = await server?.getPrimaryService(BATTERY_SERVICE_UUID);
+            const batteryChar = await batteryService?.getCharacteristic(BATTERY_CHARACTERISRIC_UUID);
+            const batteryData = await batteryChar?.readValue()
+
+            batteryLevel.value = batteryData?.getUint8(0)
+        }catch(err){
+            batteryLevel.value = undefined
+            console.error(err)
+        }
+    }
+
     async function selectDevice(){
         connectingState.value = true
         try{
-            const device = await (navigator as any).bluetooth.requestDevice({
+            const device = await navigator.bluetooth.requestDevice({
                 filters: [
                     { services: [HRM_SERVICE_UUID, ] }
                 ],
-                optionalServices: []
+                optionalServices: [BATTERY_SERVICE_UUID]
             });
 
-            const server = await device.gatt.connect();
+            const server = await device?.gatt?.connect();
             device.addEventListener('gattserverdisconnected', () => {
                 console.log(`${device.name} disconnected`)
                 bluetoothDevice.value = null
                 heartRate.value = null
+                batteryLevel.value = undefined
             })
 
-            const service = await server.getPrimaryService(HRM_SERVICE_UUID);
-            const hrmChar = await service.getCharacteristic(HRM_CHARACTERISTIC_UUID);
-            await hrmChar.startNotifications();
-            hrmChar.addEventListener('characteristicvaluechanged', onHrmDataChanged);
+            const service = await server?.getPrimaryService(HRM_SERVICE_UUID);
+            const hrmChar = await service?.getCharacteristic(HRM_CHARACTERISTIC_UUID);
+
+            await hrmChar?.startNotifications();
+            hrmChar?.addEventListener('characteristicvaluechanged', onHrmDataChanged);
             bluetoothDevice.value = device;
+
+            getDeviceBatteryLevel(server)
         } finally {
             connectingState.value = false
         }
     }
     
-    return { selectDevice, deviceName, isConnected, isConnecting, heartRate };
+    return { selectDevice, deviceName, batteryLevel, isConnected, isConnecting, heartRate };
 })
