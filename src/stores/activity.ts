@@ -1,11 +1,12 @@
-import { computed, ref, type Ref, type ComputedRef, type WritableComputedRef, watch, watchEffect } from 'vue'
+import { computed, ref, watch, type Ref, type ComputedRef} from 'vue'
 import { defineStore } from 'pinia'
 import { FitEncoder } from '@/lib/fit'
-import { NullPathStrategy, type GeoPoint, type GeoPathStrategy } from '@/lib/geo'
+import { NullPathStrategy, type GeoPathStrategy } from '@/lib/geo'
 
 
 export const useActivityStore = defineStore('activity', () => {
     const started = ref(false)
+    const isStarted = computed(() => started.value)
 
     const distance = ref(0)
     const elapsed = ref(0)
@@ -34,17 +35,9 @@ export const useActivityStore = defineStore('activity', () => {
         grade = gradeSensor
     }
 
-    const altitudeProfile = computed<any[]>(() => {
-        return geoPathStrategy.value.waypoints().map( item => {
-            return {x: item.distance/1000, y: item.altitude}
-        })
-    })
-
-    let activityTimestamp = (new Date()).getTime()/1000
-
-
+    const waypoints = computed(() => geoPathStrategy.value.waypoints() )
+    
     watch(distance, (value, oldValue) => {
-        //const deltaDistance: number = value - oldValue
         const geoPoint = geoPathStrategy.value.geoPointByDistance(value)
         if( geoPoint ){
             latitude.value = geoPoint ? geoPoint.latitude : null
@@ -74,7 +67,7 @@ export const useActivityStore = defineStore('activity', () => {
     }
 
     function startActivity(){
-        activityTimestamp = (new Date()).getTime()/1000
+        let activityTimestamp = (new Date()).getTime()/1000
 
         distance.value = 0
         elapsed.value = 0
@@ -105,9 +98,5 @@ export const useActivityStore = defineStore('activity', () => {
         activityFitData.value = fitEncoder.export()
     }
 
-    const isStarted = computed(() => {
-        return started.value
-    })
-
-    return { isStarted, setGeoPathStrategy, attachSensors, startActivity, stopActivity, altitudeProfile, activityFitData, distance, latitude, longitude, altitude, elapsed };
+    return { isStarted, setGeoPathStrategy, attachSensors, startActivity, stopActivity, waypoints, activityFitData, distance, latitude, longitude, altitude, elapsed };
 })

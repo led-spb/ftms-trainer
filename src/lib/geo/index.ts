@@ -76,7 +76,13 @@ export class FollowPathStrategy implements GeoPathStrategy {
         )
 
         console.log(`followTrack loaded ${data.length} points`)
-        console.log(JSON.stringify(data.map(item => { return {distance: item.distance, longitude: item.longitude, latitude: item.latitude, altitude: item.altitude}}) ))
+        if( import.meta.env.DEV ){
+            console.log(
+                JSON.stringify(
+                    data.map(item => { return {distance: item.distance, longitude: item.longitude, latitude: item.latitude, altitude: item.altitude}})
+                )
+            )
+        }
 
         this.targetPoints = data
     }

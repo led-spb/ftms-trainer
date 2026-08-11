@@ -5,12 +5,13 @@
 
   import {type ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
+  import type { GeoPoint } from '@/lib/geo';
 
   const trainer = useTrainerStore()
   const heart = useHeartStore()
 
   const activity = useActivityStore()
-  
+
   activity.attachSensors(
     computed(() => trainer.speed ?? 0),
     computed(() => trainer.power),
@@ -26,7 +27,7 @@
   const isDebug = computed(() => import.meta.env.DEV)
 
 
-  const altitudeChartData = computed<ChartData<"scatter">>(() => {
+  const altitudeChartData = computed<any>(() => {
     return {
       datasets: [
         {
@@ -37,13 +38,13 @@
           pointBackgroundColor: 'red'
         },
         {
-          data: activity.altitudeProfile,
+          data: activity.waypoints.map( point => {return {x: point.distance/1000, y: point.altitude}} ),
           showLine: true,
           tension: 0.3,
           pointStyle: false,
           borderColor: 'rgba(54, 162, 235, 1)',
           animation: false,
-        },        
+        },
       ]
     }
   })
@@ -57,7 +58,7 @@
       scales: {
         x: {
           min: Math.trunc(activity.distance/1000)-1,
-          max: Math.trunc(activity.distance/1000)+3,          
+          max: Math.trunc(activity.distance/1000)+3,
         }
       }
     }
@@ -77,16 +78,6 @@
   }
 
   function startActitvitySession(){
-    // const metrics = computed(() => { 
-    //   return {
-    //     speed: trainer.speed,
-    //     power: trainer.power,
-    //     cadence: trainer.cadence,
-    //     grade: trainer.grade,
-    //     heartRate: heart.heartRate
-    //   }
-    // })
-    // activity.startActivity(metrics, (value) => { trainer.grade = value })
     activity.startActivity()
     WakeLockManager.requestLock()
   }
@@ -99,15 +90,15 @@
   function exportActivityData(){
     const blob = new Blob([activity.activityFitData?.buffer as ArrayBuffer], { type: 'application/octetstream' });
     const url = window.URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `activity-${(new Date()).toISOString().replaceAll(/[-.:Z]/g,'')}.fit`;
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);    
+    window.URL.revokeObjectURL(url);
   }
 
 </script>
@@ -151,11 +142,8 @@
     </UForm>
   </UContainer>
 
-  <UContainer class="mt-4">
-  </UContainer>
-  
-  <UContainer class="mt-4" v-if="activity.altitudeProfile.length > 0">
-    <USlider class="mb-4" v-model="activity.distance" :max="activity.altitudeProfile.slice(-1).pop().x * 1000" :disabled="!isDebug"></USlider>
+  <UContainer class="mt-4" v-if="activity.waypoints.length > 0">
+    <USlider class="mb-4" v-model="activity.distance" :max="activity.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
     <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
 </template>

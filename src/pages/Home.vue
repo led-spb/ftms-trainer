@@ -49,7 +49,7 @@
     <UContainer>
         <div class="flex items-center justify-center">
             <UButton icon="i-lucide-bike" variant="outline" size="xl" class="mr-6" @click="goFreeRide()">Free ride</UButton>
-            <UButton icon="i-lucide-route" :variant="displayFollowState ? 'solid': 'outline'" size="xl" @click="displayFollowState = !displayFollowState">Follow route</UButton>
+            <UButton icon="i-lucide-route" :variant="displayFollowState ? 'solid': 'outline'" size="xl" @click="displayFollowState = !displayFollowState">Route</UButton>
         </div>
         <div v-if="displayFollowState">
             <UListbox v-model="selectedRoute" value-key="value" :items="routesList" class="mt-4" size="xl"/>
