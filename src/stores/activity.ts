@@ -37,8 +37,8 @@ export const useActivityStore = defineStore('activity', () => {
 
     const waypoints = computed(() => geoPathStrategy.value.waypoints() )
     
-    watch(distance, (value, oldValue) => {
-        const geoPoint = geoPathStrategy.value.geoPointByDistance(value)
+    watch([distance, geoPathStrategy], ([newDistance, newStrategy] ) => {
+        const geoPoint = newStrategy.geoPointByDistance(newDistance)
         if( geoPoint ){
             latitude.value = geoPoint ? geoPoint.latitude : null
             longitude.value = geoPoint ? geoPoint.longitude : null
@@ -63,7 +63,8 @@ export const useActivityStore = defineStore('activity', () => {
     let timerId: any = null
 
     function setGeoPathStrategy(strategy: GeoPathStrategy){
-        geoPathStrategy.value = strategy 
+        geoPathStrategy.value = strategy
+        distance.value = 0
     }
 
     function startActivity(){

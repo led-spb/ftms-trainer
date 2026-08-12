@@ -1,2 +1,8 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+@import "leaflet/dist/leaflet.css";
+
+
+.leaflet-control-attribution {
+  display: none !important;
+}

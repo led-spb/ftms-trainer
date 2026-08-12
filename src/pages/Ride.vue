@@ -6,6 +6,8 @@
   import {type ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
 
+  import {LMap, LPolyline, LTileLayer, LCircleMarker} from "@vue-leaflet/vue-leaflet";
+
   const trainer = useTrainerStore()
   const heart = useHeartStore()
 
@@ -46,6 +48,12 @@
         },
       ]
     }
+  })
+
+  const activityTrackLine = computed(() => {
+    return activity.waypoints.map( point => {
+      return [point.latitude, point.longitude]
+    })
   })
 
   const altitudeChartOptions = computed(() => {
@@ -162,4 +170,15 @@
     <USlider class="mb-4" v-model="activity.distance" :max="activity.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
     <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
+
+  <UContainer class="mt-4">
+    <div style="height: 26vh; width:100%" v-if="activity.latitude != null && activity.longitude != null">
+      <LMap ref="map" :center="[activity.latitude, activity.longitude]" :zoom="14">
+        <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base" name="OpenStreetMap"/>
+        <LPolyline color="red" :lat-lngs="activityTrackLine"/>
+        <LCircleMarker :lat-lng="[activity.latitude, activity.longitude]" color="green" :radius="5" fill :fill-opacity="1" fill-color="green"/>
+      </LMap>
+    </div>
+  </UContainer>
+
 </template>
