@@ -50,17 +50,16 @@
     }
   })
 
-  const activityTrackLine = computed(() => {
-    return activity.waypoints.map( point => {
-      return [point.latitude, point.longitude]
-    })
-  })
+  const activityTrackLine = computed(
+    () => activity.waypoints.map(point => [point.latitude, point.longitude])
+  )
 
   const altitudeChartOptions = computed(() => {
     return {
       responsive: true,
       plugins: {
         legend: {display: false},
+        tooltip: {enabled: false},
       },
       scales: {
         x: {
@@ -71,7 +70,7 @@
     }
   })
 
-  async function connectDevice(device: any){
+  const connectDevice = async (device: any) => {
     try{
       await device.selectDevice()
     }catch(error: Error|any) {
@@ -84,17 +83,17 @@
     }
   }
 
-  function startActitvitySession(){
+  const startActitvitySession = () => {
     activity.startActivity()
     WakeLockManager.requestLock()
   }
 
-  function stopActivitySession(){
+  const stopActivitySession = () => {
     activity.stopActivity()
     WakeLockManager.releaseLock()
   }
 
-  function exportActivityData(){
+  const exportActivityData = () => {
     const blob = new Blob([activity.activityFitData?.buffer as ArrayBuffer], { type: 'application/octetstream' });
     const url = window.URL.createObjectURL(blob);
 
@@ -149,9 +148,9 @@
         <div class="text-3xl">{{ heart.heartRate != null  ? heart.heartRate.toFixed(0) : 'n/a' }} bpm</div>
       </UFormField>
       <UFormField class="text-3xl mb-1" label="Grade" orientation="horizontal" v-if="trainer.isConnected || isDebug">
-        <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1"></UButton>
+        <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1" v-if="activity.waypoints.length == 0"></UButton>
         <span class="text-3xl">{{ trainer.grade.toFixed(1) }} %</span>
-        <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1"></UButton>
+        <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1" v-if="activity.waypoints.length == 0"></UButton>
       </UFormField>
     </UForm>
 

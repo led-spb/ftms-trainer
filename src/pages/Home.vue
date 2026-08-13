@@ -2,8 +2,7 @@
     import { ref, computed, watch, useTemplateRef, nextTick } from 'vue';
     import { useRouter } from 'vue-router';
     import { useActivityStore, useRoutesStore } from '@/stores';
-    import type { Route } from '@/stores/routes';
-    import { type GeoPoint, FollowPathStrategy, NullPathStrategy } from '@/lib/geo';
+    import { FollowPathStrategy, NullPathStrategy } from '@/lib/geo';
     import {LMap, LPolyline, LTileLayer} from "@vue-leaflet/vue-leaflet";
 
     const router = useRouter()
@@ -12,11 +11,11 @@
     const mapObject = useTemplateRef('map');
     const polyLineObject = useTemplateRef('polyline');
 
-
+    const debugMode = computed(() => import.meta.env.DEV)
     const fitFile = ref()
 
     const displayFollowState = ref(false)
-    const selectedRoute = ref<Route>()
+
     const routesList = computed(() => routes.routes.map(item => {
             return {
                 label: item.name,
@@ -25,7 +24,7 @@
             }
         })
     )
-    const routeTrackPoints = computed(() => selectedRoute.value?.waypoints.map( item => [item.latitude, item.longitude]))
+    const routeTrackPoints = computed(() => routes.activeRoute?.waypoints.map( item => [item.latitude, item.longitude]))
 
     const zoomToPolyline = async () => {
         await nextTick();
@@ -42,7 +41,7 @@
     const followRouteClick = () => {
         displayFollowState.value = !displayFollowState.value
         if( !displayFollowState.value ){
-            selectedRoute.value = undefined
+            routes.activeRoute = undefined
         }
     }
 
@@ -51,10 +50,10 @@
         router.push({name: 'ride'})
     }
 
-    const goRouteRide = (waypoints: GeoPoint[]|undefined) => {
-        if( waypoints ){
+    const goRouteRide = () => {
+        if( routes.activeRoute ){
             const path = new FollowPathStrategy()
-            path.setFollowPathPoints(waypoints)
+            path.setFollowPathPoints(routes.activeRoute.waypoints)
 
             activity.setGeoPathStrategy(path)
             router.push({name: 'ride'})
@@ -62,7 +61,7 @@
     }
 
     const loadFitFile = async() => {
-        selectedRoute.value = await routes.loadRouteFromFile(fitFile.value)
+        await routes.loadRouteFromFile(fitFile.value)
     }
 </script>
 
@@ -74,15 +73,16 @@
             <UButton icon="i-lucide-route" :variant="displayFollowState ? 'solid': 'outline'" size="xl" @click="followRouteClick">Route</UButton>
         </div>
         <div v-if="displayFollowState">
-            <UListbox v-model="selectedRoute" value-key="value" :items="routesList" class="mt-4" size="xl"/>
+            <UListbox v-model="routes.activeRoute" value-key="value" :items="routesList" class="mt-4" size="xl"/>
             <div class="flex items-center justify-center mt-4">
                 <UFileUpload class="mr-2" v-on:change="loadFitFile()" v-model="fitFile" variant="button" label="Load from .fit"></UFileUpload>
-                <UButton variant="outline" :disabled="!selectedRoute" @click="goRouteRide(selectedRoute?.waypoints)">Go ride</UButton>
+                <UButton class="mr-2" variant="outline" :disabled="!routes.activeRoute" @click="router.push({name: 'edit'})" v-if="debugMode">Edit</UButton>
+                <UButton variant="outline" :disabled="!routes.activeRoute" @click="goRouteRide()">Go ride</UButton>
             </div>
         </div>
     </UContainer>
 
-    <UContainer class="mt-4" v-if="selectedRoute">
+    <UContainer class="mt-4" v-if="displayFollowState && routes.activeRoute">
         <div style="width: 100%; height: 50vh;">
             <LMap ref="map" :center="[0, 0]" :zoom="14">
                 <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base" name="OpenStreetMap"/>

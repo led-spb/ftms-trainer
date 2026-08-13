@@ -121,16 +121,19 @@ export class FollowPathStrategy implements GeoPathStrategy {
         const pointA = nearestPoints[0]
         const pointB = nearestPoints[1]
 
+        const hasCoorinates = pointA.latitude != null && pointB.latitude != null && pointA.longitude != null && pointB.longitude != null
+        const hasAltitudes = pointA.altitude != null && pointB.altitude != null
+
         if( pointA.distance == pointB.distance )
             return pointA
 
         // linear interpolate 
         const progress = (distance - pointA.distance)/(Math.abs(pointB.distance - pointA.distance))
 
-        const latitude = pointA.latitude + (pointB.latitude-pointA.latitude)*progress
-        const longitude = pointA.longitude + (pointB.longitude-pointA.longitude)*progress
-        const altitude = pointA.altitude + (pointB.altitude-pointA.altitude)*progress
-        const grade = pointA.grade + (pointB.grade-pointA.grade)*progress
+        const latitude = hasCoorinates ? (pointA.latitude + (pointB.latitude-pointA.latitude)*progress) : undefined
+        const longitude = hasCoorinates ? (pointA.longitude + (pointB.longitude-pointA.longitude)*progress) : undefined
+        const altitude = hasAltitudes ? (pointA.altitude + (pointB.altitude-pointA.altitude)*progress) : undefined
+        const grade = hasAltitudes ? (pointA.grade + (pointB.grade-pointA.grade)*progress) : undefined
 
         return {longitude, latitude, distance, altitude, grade}
     }

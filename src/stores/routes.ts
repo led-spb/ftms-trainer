@@ -4,7 +4,6 @@ import { defineStore } from 'pinia'
 import type { GeoPoint } from '@/lib/geo'
 import { FitDecoder } from '@/lib/fit'
 
-import routes_data from '@/assets/data' 
 
 export interface Route {
     name: string,
@@ -13,8 +12,9 @@ export interface Route {
 }
 
 export const useRoutesStore = defineStore('routes', () => {
+    const activeRoute = ref<Route|undefined>();
 
-    async function loadRouteFromFile(file: File): Promise<Route>{
+    async function loadRouteFromFile(file: File){
         const decoder = new FitDecoder()
         decoder.import(await file.arrayBuffer())
 
@@ -27,14 +27,17 @@ export const useRoutesStore = defineStore('routes', () => {
             }
         })
 
-        return {
+        activeRoute.value = {
             name: file.name,
             distance: waypoints.slice(-1).pop()?.distance ?? 0,
             waypoints: waypoints,
         }
     }
 
-    const routes = computed<Route[]>(() => routes_data as Route[])
+    const routes_data = ref<Route[]>([])
+    import('@/assets/data').then(module => { routes_data.value = module.default })
 
-    return { routes, loadRouteFromFile }
+    const routes = computed<Route[]>(() => routes_data.value as Route[])
+
+    return { routes, activeRoute, loadRouteFromFile }
 })
