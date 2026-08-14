@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, computed, watch, useTemplateRef, nextTick } from 'vue';
+    import { ref, computed, useTemplateRef, nextTick } from 'vue';
     import { useRouter } from 'vue-router';
     import { useActivityStore, useRoutesStore } from '@/stores';
     import { FollowPathStrategy, NullPathStrategy } from '@/lib/geo';
@@ -15,6 +15,7 @@
     const fitFile = ref()
 
     const displayFollowState = ref(false)
+    const reverse = ref(false)
 
     const routesList = computed(() => routes.routes.map(item => {
             return {
@@ -53,7 +54,7 @@
     const goRouteRide = () => {
         if( routes.activeRoute ){
             const path = new FollowPathStrategy()
-            path.setFollowPathPoints(routes.activeRoute.waypoints)
+            path.setFollowPathPoints(routes.activeRoute.waypoints, reverse.value)
 
             activity.setGeoPathStrategy(path)
             router.push({name: 'ride'})
@@ -78,6 +79,7 @@
                 <UFileUpload class="mr-2" v-on:change="loadFitFile()" v-model="fitFile" variant="button" label="Load from .fit"></UFileUpload>
                 <UButton class="mr-2" variant="outline" :disabled="!routes.activeRoute" @click="router.push({name: 'edit'})" v-if="debugMode">Edit</UButton>
                 <UButton variant="outline" :disabled="!routes.activeRoute" @click="goRouteRide()">Go ride</UButton>
+                <USwitch class="ml-2" label="Reverse" v-model="reverse"/>
             </div>
         </div>
     </UContainer>

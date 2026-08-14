@@ -51,12 +51,17 @@ export class FollowPathStrategy implements GeoPathStrategy {
         this.targetPoints = [];
     }
 
-    public setFollowPathPoints(points: GeoPoint[]){
-        const data = points.filter((item, index) => {
+    public setFollowPathPoints(points: GeoPoint[], reverse: boolean = false){
+        let data = points.filter((item, index) => {
             if( index < points.length-1 && item.distance == points[index+1]?.distance)
                 return false
             return true
         })
+        const totalDistance = data.at(-1)?.distance??0
+        if( reverse ){
+            data.reverse()
+            data = data.map(point => { return {...point, distance: totalDistance-point.distance}})
+        }
 
         data.reduceRight(
             (next, current) => {
@@ -72,10 +77,10 @@ export class FollowPathStrategy implements GeoPathStrategy {
                 }
                 return current
             },
-            data.slice(-1).pop()
+            data.at(-1)
         )
 
-        console.log(`followTrack loaded ${data.length} points`)
+        console.log(`loaded ${data.length} points of track for ${(totalDistance/1000).toFixed(2)} km, reversed: ${reverse}`)
         if( import.meta.env.DEV ){
             console.log(
                 JSON.stringify(

@@ -65,7 +65,11 @@
         x: {
           min: Math.trunc(activity.distance/1000)-1,
           max: Math.trunc(activity.distance/1000)+3,
-        }
+        },
+        y: {
+          suggestedMin: Math.min(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
+          suggestedMax: Math.max(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
+        },
       }
     }
   })
@@ -172,7 +176,7 @@
 
   <UContainer class="mt-4">
     <div style="height: 26vh; width:100%" v-if="activity.latitude != null && activity.longitude != null">
-      <LMap ref="map" :center="[activity.latitude, activity.longitude]" :zoom="14">
+      <LMap :center="[activity.latitude, activity.longitude]" :zoom="14">
         <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base" name="OpenStreetMap"/>
         <LPolyline color="red" :lat-lngs="activityTrackLine"/>
         <LCircleMarker :lat-lng="[activity.latitude, activity.longitude]" color="green" :radius="5" fill :fill-opacity="1" fill-color="green"/>
