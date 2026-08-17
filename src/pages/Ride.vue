@@ -6,7 +6,7 @@
   import {type ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
 
-  import {LMap, LPolyline, LTileLayer, LCircleMarker} from "@vue-leaflet/vue-leaflet";
+  import {LMap, LPolyline, LTileLayer, LCircleMarker, LMarker} from "@vue-leaflet/vue-leaflet";
 
   const trainer = useTrainerStore()
   const heart = useHeartStore()
@@ -65,10 +65,16 @@
         x: {
           min: Math.trunc(activity.distance/1000)-1,
           max: Math.trunc(activity.distance/1000)+3,
+          grid: {
+            color: '#666'
+          },
         },
         y: {
           suggestedMin: Math.min(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
           suggestedMax: Math.max(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
+          grid: {
+            color: '#666'
+          },        
         },
       }
     }
@@ -180,6 +186,7 @@
         <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base" name="OpenStreetMap"/>
         <LPolyline color="red" :lat-lngs="activityTrackLine"/>
         <LCircleMarker :lat-lng="[activity.latitude, activity.longitude]" color="green" :radius="5" fill :fill-opacity="1" fill-color="green"/>
+        <!-- <LMarker :lat-lng="[activity.latitude, activity.longitude]"/> -->
       </LMap>
     </div>
   </UContainer>

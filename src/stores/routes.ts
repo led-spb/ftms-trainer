@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import type { GeoPoint } from '@/lib/geo'
+import { FollowPathStrategy, type GeoPoint } from '@/lib/geo'
 import { FitDecoder } from '@/lib/fit'
 
 
@@ -13,6 +13,8 @@ export interface Route {
 
 export const useRoutesStore = defineStore('routes', () => {
     const activeRoute = ref<Route|undefined>();
+
+    const step = ref(50);
 
     async function loadRouteFromFile(file: File){
         const decoder = new FitDecoder()
@@ -29,7 +31,7 @@ export const useRoutesStore = defineStore('routes', () => {
 
         activeRoute.value = {
             name: file.name,
-            distance: waypoints.slice(-1).pop()?.distance ?? 0,
+            distance: waypoints.at(-1)?.distance ?? 0,
             waypoints: waypoints,
         }
     }
@@ -37,7 +39,31 @@ export const useRoutesStore = defineStore('routes', () => {
     const routes_data = ref<Route[]>([])
     import('@/assets/data').then(module => { routes_data.value = module.default })
 
-    const routes = computed<Route[]>(() => routes_data.value as Route[])
+    const routes = computed<Route[]>(() => {
+        const strategy = new FollowPathStrategy()
 
-    return { routes, activeRoute, loadRouteFromFile }
+        return routes_data.value.map((route) => {
+            strategy.setFollowPathPoints(route.waypoints);
+
+            const newPoints = []
+            for(let dist=0; dist<=route.distance; dist+=step.value){
+                newPoints.push(strategy.geoPointByDistance(dist)!)
+            }
+            // moving average
+            newPoints.reduce( (acc, current) => {
+                acc.push(current.altitude!)
+                if( acc.length >=2 ){
+                    const total = acc.reduce( (acc, x) => acc + x )
+                    current.altitude = total / acc.length
+                    acc.splice(0, 1)
+                }
+
+                return acc
+            }, <number[]>[])
+
+            return {...route, waypoints: newPoints}
+        })
+    })
+
+    return { routes, step, activeRoute, loadRouteFromFile }
 })

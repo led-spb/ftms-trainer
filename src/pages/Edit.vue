@@ -45,7 +45,7 @@
         console.log(
             JSON.stringify(
                 chartData.value.map( (item) => {
-                    return {...item.data, altitude: item.y}
+                    return {...item.data, altitude: item.y, grade: undefined}
                 })
             )
         )

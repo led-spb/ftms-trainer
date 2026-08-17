@@ -80,6 +80,7 @@ export class FollowPathStrategy implements GeoPathStrategy {
             data.at(-1)
         )
 
+        /*
         console.log(`loaded ${data.length} points of track for ${(totalDistance/1000).toFixed(2)} km, reversed: ${reverse}`)
         if( import.meta.env.DEV ){
             console.log(
@@ -87,7 +88,7 @@ export class FollowPathStrategy implements GeoPathStrategy {
                     data.map(item => { return {distance: item.distance, longitude: item.longitude, latitude: item.latitude, altitude: item.altitude}})
                 )
             )
-        }
+        }*/
 
         this.targetPoints = data
     }
