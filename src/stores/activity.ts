@@ -1,7 +1,7 @@
 import { computed, ref, watch, type Ref, type ComputedRef} from 'vue'
 import { defineStore } from 'pinia'
 import { FitEncoder } from '@/lib/fit'
-import { NullPathStrategy, type GeoPathStrategy } from '@/lib/geo'
+import { Route } from '@/lib/geo'
 
 
 export const useActivityStore = defineStore('activity', () => {
@@ -25,7 +25,10 @@ export const useActivityStore = defineStore('activity', () => {
 
 
     const fitEncoder = new FitEncoder()
-    const geoPathStrategy = ref(new NullPathStrategy());
+
+    const route = ref<Route>()
+    const waypoints = computed(() => { return route.value ? route.value.waypoints : []  })
+
 
     function attachSensors(speedSensor: ComputedRef<number>, powerSensor: ComputedRef<number|null>, cadenceSensor: ComputedRef<number|null>, heartRateSensor: ComputedRef<number|null>, gradeSensor: Ref<number>){
         speed = speedSensor
@@ -34,20 +37,17 @@ export const useActivityStore = defineStore('activity', () => {
         heartRate = heartRateSensor
         grade = gradeSensor
     }
-
-    const waypoints = computed(() => geoPathStrategy.value.waypoints() )
-    
-    watch([distance, geoPathStrategy], ([newDistance, newStrategy] ) => {
-        const geoPoint = newStrategy.geoPointByDistance(newDistance)
-        if( geoPoint ){
-            latitude.value = geoPoint ? geoPoint.latitude : null
-            longitude.value = geoPoint ? geoPoint.longitude : null
-
-            if( geoPoint.altitude != null ){
+ 
+    watch([distance, route], ([newDistance, newRoute] ) => {
+        if( newRoute ){
+            const geoPoint = newRoute.geoPointByDistance(newDistance)
+            if( geoPoint ){
+                latitude.value = geoPoint.latitude
+                longitude.value = geoPoint.longitude
                 altitude.value = geoPoint.altitude
-            }
-            if( geoPoint.grade != null){
-                grade.value = Math.floor(geoPoint.grade*10)/10
+                if( geoPoint.grade != undefined ){
+                    grade.value = Math.floor(geoPoint.grade*10)/10
+                }
             }
         }
         // store track point
@@ -61,11 +61,6 @@ export const useActivityStore = defineStore('activity', () => {
     })
 
     let timerId: any = null
-
-    function setGeoPathStrategy(strategy: GeoPathStrategy){
-        geoPathStrategy.value = strategy
-        distance.value = 0
-    }
 
     function startActivity(){
         let activityTimestamp = (new Date()).getTime()/1000
@@ -99,5 +94,5 @@ export const useActivityStore = defineStore('activity', () => {
         activityFitData.value = fitEncoder.export()
     }
 
-    return { isStarted, setGeoPathStrategy, attachSensors, startActivity, stopActivity, waypoints, activityFitData, distance, latitude, longitude, altitude, elapsed };
+    return { isStarted, route, waypoints, attachSensors, startActivity, stopActivity, activityFitData, distance, latitude, longitude, altitude, elapsed };
 })

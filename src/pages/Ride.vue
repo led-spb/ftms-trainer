@@ -63,8 +63,8 @@
       },
       scales: {
         x: {
-          min: Math.trunc(activity.distance/1000)-1,
-          max: Math.trunc(activity.distance/1000)+3,
+          min: activity.distance < 1000 ? 0 : Math.trunc(activity.distance/500)/2-1,
+          max: (activity.distance < 1000 ? 0 : Math.trunc(activity.distance/500)/2-1)+4,
           grid: {
             color: '#666'
           },
