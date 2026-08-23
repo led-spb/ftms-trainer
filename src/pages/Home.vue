@@ -10,7 +10,6 @@
     const routeStore = useRoutesStore()
 
     const debugMode = computed(() => import.meta.env.DEV)
-    const fitFile = ref()
 
     const displayRoute = ref(false)
     const reverse = ref(false)

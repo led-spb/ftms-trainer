@@ -149,28 +149,28 @@
 
     <UForm class="mb-6">
       <UFormField class="text-3xl mb-1" label="Speed" orientation="horizontal" v-if="trainer.speed != null || isDebug">
-        <div class="text-3xl">{{ trainer.speed != null ? trainer.speed.toFixed(1) : 'n/a' }} km/h</div>
+         {{ trainer.speed != null ? trainer.speed.toFixed(1) : 'n/a' }} km/h
       </UFormField>
       <UFormField class="text-3xl mb-1" label="Power" orientation="horizontal" v-if="trainer.power != null || isDebug" >
-        <div class="text-3xl">{{ trainer.power != null  ? trainer.power.toFixed(0) : 'n/a'}} wt</div>
+        {{ trainer.power != null  ? trainer.power.toFixed(0) : 'n/a'}} wt
       </UFormField>
       <UFormField class="text-3xl mb-1" label="Heart rate" orientation="horizontal" v-if="heart.heartRate != null || isDebug">
-        <div class="text-3xl">{{ heart.heartRate != null  ? heart.heartRate.toFixed(0) : 'n/a' }} bpm</div>
+        {{ heart.heartRate != null  ? heart.heartRate.toFixed(0) : 'n/a' }} bpm
       </UFormField>
       <UFormField class="text-3xl mb-1" label="Grade" orientation="horizontal" v-if="trainer.isConnected || isDebug">
         <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1" v-if="activity.waypoints.length == 0"></UButton>
-        <span class="text-3xl">{{ trainer.grade.toFixed(1) }} %</span>
+        {{ trainer.grade.toFixed(1) }} %
         <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1" v-if="activity.waypoints.length == 0"></UButton>
       </UFormField>
     </UForm>
 
     <UForm>
       <UFormField label="Distance" orientation="horizontal" class="text-4xl mb-1">
-        <div class="text-4xl">{{ (activity.distance/1000).toFixed(2) }} km</div>
+        {{ (activity.distance/1000).toFixed(2) }} km
       </UFormField>
 
       <UFormField label="Time" orientation="horizontal" class="text-4xl mb-1">
-        <div class="text-4xl">{{ Math.trunc(activity.elapsed/3600).toString().padStart(2, '0') }}:{{ (Math.trunc(activity.elapsed/60)%60).toString().padStart(2, '0') }}:{{ Math.trunc(activity.elapsed%60).toString().padStart(2, '0') }}</div>
+        {{ Math.trunc(activity.elapsed/3600).toString().padStart(2, '0') }}:{{ (Math.trunc(activity.elapsed/60)%60).toString().padStart(2, '0') }}:{{ Math.trunc(activity.elapsed%60).toString().padStart(2, '0') }}
       </UFormField>
     </UForm>
   </UContainer>
