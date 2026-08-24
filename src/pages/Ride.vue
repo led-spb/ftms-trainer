@@ -54,6 +54,18 @@
     () => activity.waypoints.map(point => [point.latitude, point.longitude])
   )
 
+  const chartBounds = (distance : number, total: number) => {
+    const pos = Math.trunc(distance/500)/2;
+    const max = Math.trunc(total/500)/2
+    if( pos <= 1){
+      return {min: 0, max: 4}
+    }
+    if( pos >= max-3){
+      return {min: max-4, max: max }
+    }
+    return {min: pos-1, max: pos+3 }
+  }
+
   const altitudeChartOptions = computed(() => {
     return {
       responsive: true,
@@ -62,13 +74,7 @@
         tooltip: {enabled: false},
       },
       scales: {
-        x: {
-          min: activity.distance < 1000 ? 0 : Math.trunc(activity.distance/500)/2-1,
-          max: (activity.distance < 1000 ? 0 : Math.trunc(activity.distance/500)/2-1)+4,
-          grid: {
-            color: '#666'
-          },
-        },
+        x: {...chartBounds(activity.distance, activity.route?.distance ?? 0), grid: {color: '#666'}},
         y: {
           suggestedMin: Math.min(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
           suggestedMax: Math.max(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
@@ -175,13 +181,13 @@
     </UForm>
   </UContainer>
 
-  <UContainer class="mt-4" v-if="activity.waypoints.length > 0">
+  <UContainer class="mt-4" v-if="activity.route != undefined">
     <USlider class="mb-4" v-model="activity.distance" :max="activity.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
     <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
 
   <UContainer class="mt-4">
-    <div style="height: 26vh; width:100%" v-if="activity.latitude != null && activity.longitude != null">
+    <div style="height: 26vh; width:100%" v-if="activity.route != undefined">
       <LMap :center="[activity.latitude, activity.longitude]" :zoom="14">
         <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base" name="OpenStreetMap"/>
         <LPolyline color="red" :lat-lngs="activityTrackLine"/>

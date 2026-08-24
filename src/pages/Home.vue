@@ -75,7 +75,7 @@
             <div class="flex items-center justify-center mt-10">
                 <UButton class="mr-2" variant="outline" :disabled="!routeStore.activeRoute" @click="router.push({name: 'edit'})" v-if="debugMode">Edit</UButton>
                 <UButton variant="outline" :disabled="!routeStore.activeRoute" @click="goRouteRide(routeStore.activeRoute!)">Go ride</UButton>
-                <USwitch class="ml-2" label="Reverse" v-model="reverse"/>
+                <!-- <USwitch class="ml-2" label="Reverse" v-model="reverse"/> -->
             </div>
         </div>
         

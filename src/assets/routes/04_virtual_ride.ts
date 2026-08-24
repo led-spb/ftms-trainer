@@ -1,5 +1,5 @@
 export default {
-  name: "Virtual ride",
+  name: "04 Virtual ride",
   distance: 0,
   waypoints: [
   {

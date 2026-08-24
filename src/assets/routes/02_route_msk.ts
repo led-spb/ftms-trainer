@@ -1,5 +1,5 @@
 export default {
-    name: 'Москва 41',
+    name: '02 Москва 41',
     distance: 41000,
     waypoints: [
   {

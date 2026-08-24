@@ -1,5 +1,5 @@
 export default {
-    name: 'СпБ по набережным',
+    name: '01 СпБ по набережным',
     distance: 42200,
     waypoints: [
   {

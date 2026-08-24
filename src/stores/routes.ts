@@ -11,7 +11,7 @@ export const useRoutesStore = defineStore('routes', () => {
     const routes = ref<Route[]>([]);
 
     Object.values(
-        import.meta.glob('@/assets/data/*.ts', {})
+        import.meta.glob('@/assets/routes/*.ts', {})
     ).map(
         (loader) => {
             loader().then((module: any) => {
@@ -37,5 +37,9 @@ export const useRoutesStore = defineStore('routes', () => {
         }
     )
 
-    return { routes: computed(() => routes.value), activeRoute}
+    return { routes: computed(() => {
+        const array = [...routes.value];
+        array.sort( ( a:Route, b :Route) => a.name.localeCompare(b.name) )
+        return array
+    }), activeRoute}
 })
