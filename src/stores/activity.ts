@@ -27,8 +27,6 @@ export const useActivityStore = defineStore('activity', () => {
     const fitEncoder = new FitEncoder()
 
     const route = ref<Route>()
-    const waypoints = computed(() => { return route.value ? route.value.waypoints : []  })
-
 
     function attachSensors(speedSensor: ComputedRef<number>, powerSensor: ComputedRef<number|null>, cadenceSensor: ComputedRef<number|null>, heartRateSensor: ComputedRef<number|null>, gradeSensor: Ref<number>){
         speed = speedSensor
@@ -94,5 +92,5 @@ export const useActivityStore = defineStore('activity', () => {
         activityFitData.value = fitEncoder.export()
     }
 
-    return { isStarted, route, waypoints, attachSensors, startActivity, stopActivity, activityFitData, distance, latitude, longitude, altitude, elapsed };
+    return { isStarted, route, attachSensors, startActivity, stopActivity, activityFitData, distance, latitude, longitude, altitude, elapsed };
 })

@@ -6,7 +6,7 @@
   import {type ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
 
-  import {LMap, LPolyline, LTileLayer, LCircleMarker, LMarker} from "@vue-leaflet/vue-leaflet";
+  import {LMap, LPolyline, LTileLayer, LCircleMarker, LMarker, LIcon} from "@vue-leaflet/vue-leaflet";
 
   const trainer = useTrainerStore()
   const heart = useHeartStore()
@@ -27,7 +27,6 @@
   const toastManager = useToast()
   const isDebug = computed(() => import.meta.env.DEV)
 
-
   const altitudeChartData = computed<any>(() => {
     return {
       datasets: [
@@ -39,7 +38,7 @@
           pointBackgroundColor: 'red'
         },
         {
-          data: activity.waypoints.map( point => {return {x: point.distance/1000, y: point.altitude}} ),
+          data: activity.route?.waypoints.map( point => {return {x: point.distance/1000, y: point.altitude}} ),
           showLine: true,
           tension: 0.3,
           pointStyle: false,
@@ -51,7 +50,23 @@
   })
 
   const activityTrackLine = computed(
-    () => activity.waypoints.map(point => [point.latitude, point.longitude])
+    () => activity.route ? activity.route.waypoints.map(point => [point.latitude, point.longitude]) : []
+  )
+
+  const activityMarkers = computed(
+    () => {
+      const markers:any = [];
+      for(let distance=5000; activity.route && distance <= activity.route?.distance; distance+=5000){
+        const position = activity.route.geoPointByDistance(distance);
+        if( position ){
+          markers.push({
+            name: Math.trunc(distance/1000),
+            pos: position,
+          })
+        }
+      }
+      return markers;
+    }
   )
 
   const chartBounds = (distance : number, total: number) => {
@@ -76,8 +91,8 @@
       scales: {
         x: {...chartBounds(activity.distance, activity.route?.distance ?? 0), grid: {color: '#666'}},
         y: {
-          suggestedMin: Math.min(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
-          suggestedMax: Math.max(...activity.waypoints.map((point) => {return point.altitude ?? 0})),
+          suggestedMin: Math.min(...(activity.route?.waypoints ?? []).map((point) => {return point.altitude ?? 0})),
+          suggestedMax: Math.max(...(activity.route?.waypoints ?? []).map((point) => {return point.altitude ?? 0})),
           grid: {
             color: '#666'
           },        
@@ -164,9 +179,9 @@
         {{ heart.heartRate != null  ? heart.heartRate.toFixed(0) : 'n/a' }} bpm
       </UFormField>
       <UFormField class="text-3xl mb-1" label="Grade" orientation="horizontal" v-if="trainer.isConnected || isDebug">
-        <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1" v-if="activity.waypoints.length == 0"></UButton>
+        <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1" v-if="!activity.route"></UButton>
         {{ trainer.grade.toFixed(1) }} %
-        <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1" v-if="activity.waypoints.length == 0"></UButton>
+        <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1" v-if="!activity.route"></UButton>
       </UFormField>
     </UForm>
 
@@ -182,7 +197,7 @@
   </UContainer>
 
   <UContainer class="mt-4" v-if="activity.route != undefined">
-    <USlider class="mb-4" v-model="activity.distance" :max="activity.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
+    <USlider class="mb-4" v-model="activity.distance" :max="activity.route?.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
     <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
 
@@ -191,10 +206,42 @@
       <LMap :center="[activity.latitude, activity.longitude]" :zoom="14">
         <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base" name="OpenStreetMap"/>
         <LPolyline color="red" :lat-lngs="activityTrackLine"/>
+        
+        <LMarker :lat-lng="[marker.pos.latitude, marker.pos.longitude]" v-for="marker in activityMarkers">
+          <LIcon :icon-size="[24, 24]" :icon-anchor="[12, 12]" class-name="square-numbered-marker">
+            <div class="square-box">{{ marker.name }}</div>
+          </LIcon>
+        </LMarker>
+
         <LCircleMarker :lat-lng="[activity.latitude, activity.longitude]" color="green" :radius="5" fill :fill-opacity="1" fill-color="green"/>
-        <!-- <LMarker :lat-lng="[activity.latitude, activity.longitude]"/> -->
       </LMap>
     </div>
   </UContainer>
 
 </template>
+
+<style>
+.square-numbered-marker {
+  background: transparent;
+  border: none;
+}
+
+.square-box {
+  width: 24px;
+  height: 24px;
+  background-color: #e63946;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-size: 10px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+</style>
