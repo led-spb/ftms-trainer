@@ -23,7 +23,7 @@ jobs:
           cache: 'npm'
       
       - run: npm ci
-      - run: npm run build
+      - run: npm run build-only
       
       - uses: actions/upload-pages-artifact@v3
         with:
