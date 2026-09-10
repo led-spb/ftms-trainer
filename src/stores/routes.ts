@@ -1,13 +1,14 @@
-import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
+import { computed, ref } from 'vue';
+import { defineStore } from 'pinia';
 
-import { Route, type IRoute } from '@/lib/geo'
+import { Route } from '@/lib/geo';
+import type {IRoute} from '@/models';
+import type { GeoPoint } from '@/models';
 
 const ALTITUDE_MOVING_AVERAGE_POINTS = 2;
 
 export const useRoutesStore = defineStore('routes', () => {
     const activeRoute = ref<Route>();
-
     const routes = ref<Route[]>([]);
 
     Object.values(
@@ -18,7 +19,7 @@ export const useRoutesStore = defineStore('routes', () => {
                 const route = module.default as IRoute
 
                 route.waypoints.reduce(
-                    (acc, current) => {
+                    (acc: number[], current :GeoPoint) => {
                         acc.push(current.altitude)
                         if( acc.length >= ALTITUDE_MOVING_AVERAGE_POINTS ){
                             const total = acc.reduce( (acc, x) => acc + x )
@@ -31,15 +32,21 @@ export const useRoutesStore = defineStore('routes', () => {
                 )
 
                 routes.value.push(
-                    new Route(route.name, route.waypoints)
+                    new Route(route.id, route.name, route.waypoints)
                 )
             } )
         }
     )
 
-    return { routes: computed(() => {
-        const array = [...routes.value];
-        array.sort( ( a:Route, b :Route) => a.name.localeCompare(b.name) )
-        return array
-    }), activeRoute}
+    const sortedRoutes = computed<Route[]>(
+        () => {
+            const values = [...routes.value as Route[]]
+            values.sort(
+                (a: Route, b: Route) => a.id - b.id
+            )
+            return values
+        }
+    )
+
+    return { routes: sortedRoutes, activeRoute}
 })

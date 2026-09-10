@@ -1,7 +1,7 @@
 export default {
-  "name": "05 Virtual ride #2",
-  "distance": 0,
-  "waypoints": [
+  id: 5,
+  name: "Virtual ride #2",
+  waypoints: [
     {
       "distance": 0,
       "latitude": 36.043975688517094,

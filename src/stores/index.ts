@@ -1,11 +1,13 @@
 import { useTrainerStore } from "./trainer";
 import { useHeartStore } from "./heart";
-import { useActivityStore } from "./activity";
+import { useRecorderStore } from "./recorder";
 import { useRoutesStore } from "./routes";
+import { useActivitiesStore } from "./activities";
 
 export {
     useTrainerStore,
     useHeartStore,
-    useActivityStore,
+    useRecorderStore,
     useRoutesStore,
+    useActivitiesStore,
 }

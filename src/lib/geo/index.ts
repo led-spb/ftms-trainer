@@ -1,19 +1,8 @@
-export interface GeoPoint {
-    distance: number
-    latitude: number
-    longitude: number
-    altitude: number
-    grade?: number
-}
-
-export interface IRoute {
-    name: string
-    distance: number
-    waypoints: GeoPoint[]
-}
+import type { GeoPoint, IRoute } from "@/models"
 
 export const ROUTE_STEP_METERS = 50
 export class Route implements IRoute {
+    id: number
     name: string
     waypoints: GeoPoint[]
 
@@ -31,7 +20,8 @@ export class Route implements IRoute {
         }, 0 )
     }
 
-    constructor(name: string, waypoints :GeoPoint[]) {
+    constructor(id: number, name: string, waypoints :GeoPoint[]) {
+        this.id = id
         this.name = name
         this.waypoints = waypoints
     }

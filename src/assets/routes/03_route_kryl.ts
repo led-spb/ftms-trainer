@@ -1,6 +1,6 @@
 export default {
-    name: '03 Москва Крылатское',
-    distance: 27750,
+    id: 3,
+    name: 'Москва Крылатское',
     waypoints: [
   {
     "distance": 0,

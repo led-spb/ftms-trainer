@@ -17,9 +17,9 @@ export const useTrainerStore = defineStore('trainer', () => {
     let controlPointChar: any = null;
     let indoorBikeDataChar = null;
 
-    const speed = ref<number|null>(import.meta.env.DEV ? 24.7 : null);
-    const power = ref<number|null>(import.meta.env.DEV ? 156 : null);
-    const cadence = ref<number|null>(null);
+    const speed = ref<number|undefined>(import.meta.env.DEV ? 24.7 : undefined);
+    const power = ref<number|undefined>(import.meta.env.DEV ? 156 : undefined);
+    const cadence = ref<number|undefined>();
 
     const grade = ref(0.5)
   
@@ -113,9 +113,9 @@ export const useTrainerStore = defineStore('trainer', () => {
             console.log(`${device.name} disconnected`)
             bluetoothDevice.value = null
 
-            speed.value = null
-            power.value = null
-            cadence.value = null
+            speed.value = undefined
+            power.value = undefined
+            cadence.value = undefined
         })
 
         const service = await server.getPrimaryService(FTMS_SERVICE_UUID);

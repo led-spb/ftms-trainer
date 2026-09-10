@@ -11,8 +11,8 @@ const BATTERY_CHARACTERISRIC_UUID = '00002a19-0000-1000-8000-00805f9b34fb';
 export const useHeartStore = defineStore('heart', () => {
     const bluetoothDevice = ref();
 
-    const heartRate = ref<number|null>(null)
-    const batteryLevel = ref<number|undefined>(undefined)
+    const heartRate = ref<number|undefined>()
+    const batteryLevel = ref<number|undefined>()
     const connectingState = ref<boolean>(false)
 
     const isConnected = computed(() => {
@@ -67,7 +67,7 @@ export const useHeartStore = defineStore('heart', () => {
             device.addEventListener('gattserverdisconnected', () => {
                 console.log(`${device.name} disconnected`)
                 bluetoothDevice.value = null
-                heartRate.value = null
+                heartRate.value = undefined
                 batteryLevel.value = undefined
             })
 

@@ -1,6 +1,6 @@
 export default {
-  name: "04 Virtual ride",
-  distance: 0,
+  id: 4,
+  name: "Virtual ride",
   waypoints: [
   {
     "distance": 0,

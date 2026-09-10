@@ -1,6 +1,6 @@
 export default {
-    name: '02 Москва 41',
-    distance: 41000,
+    id: 2,
+    name: 'Москва 41',
     waypoints: [
   {
     "latitude": 55.773531971499324,

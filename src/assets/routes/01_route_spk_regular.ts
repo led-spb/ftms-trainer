@@ -1,6 +1,6 @@
 export default {
-    name: '01 СпБ по набережным',
-    distance: 42200,
+    id: 1,
+    name: 'СпБ по набережным',
     waypoints: [
   {
     "distance": 0,

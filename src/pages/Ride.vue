@@ -1,19 +1,24 @@
 <script setup lang="ts">
-  import { useTrainerStore, useHeartStore, useActivityStore } from '@/stores';
+  import { useTrainerStore, useHeartStore, useRecorderStore } from '@/stores';
   import { computed, watch } from 'vue'
   import { WakeLockManager } from '@/lib/wake';
+  import { formatDuration } from '@/lib/format';
+  import { useToast } from '@nuxt/ui/runtime/composables/useToast.js';
 
   import {type ChartData} from 'chart.js/auto';
   import {Scatter} from 'vue-chartjs';
 
   import {LMap, LPolyline, LTileLayer, LCircleMarker, LMarker, LIcon} from "@vue-leaflet/vue-leaflet";
 
+  import { useRouter } from 'vue-router';
+
+  const router = useRouter()
+
   const trainer = useTrainerStore()
   const heart = useHeartStore()
+  const recorder = useRecorderStore()
 
-  const activity = useActivityStore()
-
-  activity.attachSensors(
+  recorder.attachSensors(
     computed(() => trainer.speed ?? 0),
     computed(() => trainer.power),
     computed(() => trainer.cadence),
@@ -31,14 +36,14 @@
     return {
       datasets: [
         {
-          data: [{x: activity.distance/1000, y: activity.altitude}],
+          data: [{x: recorder.activity.distance/1000, y: recorder.activity.altitude}],
           showLine: false,
           pointStyle: 'circle', pointRadius: 5,
           animation: false,
           pointBackgroundColor: 'red'
         },
         {
-          data: activity.route?.waypoints.map( point => {return {x: point.distance/1000, y: point.altitude}} ),
+          data: recorder.activeRoute?.waypoints.map( point => {return {x: point.distance/1000, y: point.altitude}} ),
           showLine: true,
           tension: 0.3,
           pointStyle: false,
@@ -50,14 +55,14 @@
   })
 
   const activityTrackLine = computed(
-    () => activity.route ? activity.route.waypoints.map(point => [point.latitude, point.longitude]) : []
+    () => recorder.activeRoute ? recorder.activeRoute.waypoints.map(point => [point.latitude, point.longitude]) : []
   )
 
   const activityMarkers = computed(
     () => {
       const markers:any = [];
-      for(let distance=5000; activity.route && distance <= activity.route?.distance; distance+=5000){
-        const position = activity.route.geoPointByDistance(distance);
+      for(let distance=5000; recorder.activeRoute && distance <= recorder.activeRoute?.distance; distance+=5000){
+        const position = recorder.activeRoute.geoPointByDistance(distance);
         if( position ){
           markers.push({
             name: Math.trunc(distance/1000),
@@ -89,10 +94,10 @@
         tooltip: {enabled: false},
       },
       scales: {
-        x: {...chartBounds(activity.distance, activity.route?.distance ?? 0), grid: {color: '#666'}},
+        x: {...chartBounds(recorder.activity.distance, recorder.activeRoute?.distance ?? 0), grid: {color: '#666'}},
         y: {
-          suggestedMin: Math.min(...(activity.route?.waypoints ?? []).map((point) => {return point.altitude ?? 0})),
-          suggestedMax: Math.max(...(activity.route?.waypoints ?? []).map((point) => {return point.altitude ?? 0})),
+          suggestedMin: Math.min(...(recorder.activeRoute?.waypoints ?? []).map((point) => {return point.altitude ?? 0})),
+          suggestedMax: Math.max(...(recorder.activeRoute?.waypoints ?? []).map((point) => {return point.altitude ?? 0})),
           grid: {
             color: '#666'
           },        
@@ -115,27 +120,27 @@
   }
 
   const startActitvitySession = () => {
-    activity.startActivity()
+    recorder.newActivity()
+    resumeActivitySession()
+  }
+
+  const resumeActivitySession = () =>{
+    recorder.startActivity()
     WakeLockManager.requestLock()
   }
 
-  const stopActivitySession = () => {
-    activity.stopActivity()
+  const pauseActivitySession = () => {
+    recorder.pauseActivity()
     WakeLockManager.releaseLock()
   }
 
-  const exportActivityData = () => {
-    const blob = new Blob([activity.activityFitData?.buffer as ArrayBuffer], { type: 'application/octetstream' });
-    const url = window.URL.createObjectURL(blob);
+  const stopActivitySession = async () => {
+    const activityId = recorder.activity.id
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `activity-${(new Date()).toISOString().replaceAll(/[-.:Z]/g,'')}.fit`;
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    pauseActivitySession()
+    await recorder.stopActivity()
+    recorder.newActivity()
+    router.push({ name: 'activity', params: {id: activityId} })
   }
 
   watch(() => heart.batteryLevel, (value) => {
@@ -163,9 +168,10 @@
         <template v-else>HRM</template>
       </UButton>
 
-      <UButton variant="outline" class="mr-2 text-lg" @click="startActitvitySession()" :disabled="!trainer.isConnected && !isDebug" v-if="!activity.isStarted">Start</UButton>
-      <UButton variant="outline" class="mr-2 text-lg" @click="stopActivitySession()" color="warning" v-if="activity.isStarted">Stop</UButton>
-      <UButton variant="outline" class="mr-2 text-lg" @click="exportActivityData()" v-if="!activity.isStarted && activity.activityFitData">Download</UButton>
+      <UButton variant="outline" class="mr-2 text-lg" @click="startActitvitySession()" :disabled="!trainer.isConnected && !isDebug" v-if="!recorder.isStarted && recorder.activity.id == undefined">Start</UButton>
+      <UButton variant="outline" class="mr-2 text-lg" @click="resumeActivitySession()" color="warning" :disabled="!trainer.isConnected && !isDebug" v-if="!recorder.isStarted && recorder.activity.id != undefined">Resume</UButton>
+      <UButton variant="outline" class="mr-2 text-lg" @click="pauseActivitySession()" color="warning" v-if="recorder.isStarted">Pause</UButton>
+      <UButton variant="outline" class="mr-2 text-lg" @click="stopActivitySession()" color="warning" v-if="!recorder.isStarted && recorder.activity.id !== undefined">Stop</UButton>
     </div>
 
     <UForm class="mb-6">
@@ -179,31 +185,31 @@
         {{ heart.heartRate != null  ? heart.heartRate.toFixed(0) : 'n/a' }} bpm
       </UFormField>
       <UFormField class="text-3xl mb-1" label="Grade" orientation="horizontal" v-if="trainer.isConnected || isDebug">
-        <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1" v-if="!activity.route"></UButton>
+        <UButton variant="outline" icon="i-lucide-plus" size="lg" class="mr-2" @click="trainer.grade += 0.1" v-if="!recorder.activeRoute"></UButton>
         {{ trainer.grade.toFixed(1) }} %
-        <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1" v-if="!activity.route"></UButton>
+        <UButton variant="outline" icon="i-lucide-minus" size="lg" class="ml-2" @click="trainer.grade -= 0.1" v-if="!recorder.activeRoute"></UButton>
       </UFormField>
     </UForm>
 
     <UForm>
       <UFormField label="Distance" orientation="horizontal" class="text-4xl mb-1">
-        {{ (activity.distance/1000).toFixed(2) }} km
+        {{ (recorder.activity.distance/1000).toFixed(2) }} km
       </UFormField>
 
       <UFormField label="Time" orientation="horizontal" class="text-4xl mb-1">
-        {{ Math.trunc(activity.elapsed/3600).toString().padStart(2, '0') }}:{{ (Math.trunc(activity.elapsed/60)%60).toString().padStart(2, '0') }}:{{ Math.trunc(activity.elapsed%60).toString().padStart(2, '0') }}
+        {{ formatDuration(recorder.activity.elapsed) }}
       </UFormField>
     </UForm>
   </UContainer>
 
-  <UContainer class="mt-4" v-if="activity.route != undefined">
-    <USlider class="mb-4" v-model="activity.distance" :max="activity.route?.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
+  <UContainer class="mt-4" v-if="recorder.activeRoute != undefined">
+    <USlider class="mb-4" v-model="recorder.activity.distance" :max="recorder.activeRoute?.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
     <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
 
   <UContainer class="mt-4">
-    <div style="height: 26vh; width:100%" v-if="activity.route != undefined">
-      <LMap :center="[activity.latitude, activity.longitude]" :zoom="14">
+    <div style="height: 26vh; width:100%" v-if="recorder.activeRoute != undefined">
+      <LMap :center="[recorder.activity.latitude, recorder.activity.longitude]" :zoom="14">
         <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base" name="OpenStreetMap"/>
         <LPolyline color="red" :lat-lngs="activityTrackLine"/>
         
@@ -213,7 +219,7 @@
           </LIcon>
         </LMarker>
 
-        <LCircleMarker :lat-lng="[activity.latitude, activity.longitude]" color="green" :radius="5" fill :fill-opacity="1" fill-color="green"/>
+        <LCircleMarker :lat-lng="[recorder.activity.latitude, recorder.activity.longitude]" color="green" :radius="5" fill :fill-opacity="1" fill-color="green"/>
       </LMap>
     </div>
   </UContainer>
@@ -221,27 +227,26 @@
 </template>
 
 <style>
-.square-numbered-marker {
-  background: transparent;
-  border: none;
-}
+  .square-numbered-marker {
+    background: transparent;
+    border: none;
+  }
 
-.square-box {
-  width: 24px;
-  height: 24px;
-  background-color: #e63946;
-  color: #ffffff;
-  font-family: Arial, sans-serif;
-  font-weight: bold;
-  font-size: 10px;
-  
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  border: 2px solid #ffffff;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-}
-
+  .square-box {
+    width: 24px;
+    height: 24px;
+    background-color: #e63946;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 10px;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    border: 2px solid #ffffff;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  }
 </style>

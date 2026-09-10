@@ -7,7 +7,8 @@
     import zoomPlugin from 'chartjs-plugin-zoom';
     import ChartJSDragDataPlugin from 'chartjs-plugin-dragdata';
     import { FitDecoder } from '@/lib/fit';
-    import { ROUTE_STEP_METERS, Route, type GeoPoint } from '@/lib/geo';
+    import { ROUTE_STEP_METERS, Route } from '@/lib/geo';
+    import type { GeoPoint } from '@/models';
 
     Chart.register(zoomPlugin);
     Chart.register(ChartJSDragDataPlugin);
@@ -82,7 +83,7 @@
             }
         }
 
-        const route = new Route(file.name, points)
+        const route = new Route(-1, file.name, points)
         routeStore.activeRoute = route
     }
 
