@@ -48,6 +48,13 @@ export class Activity implements IActivity {
         await trainerDb.activityRecords.add({...record, timestamp: new Date(), activityId: this.id})
     }
 
+    public async remove(){
+        if( this.id == undefined)
+            return []
+        await trainerDb.activityRecords.where("activityId").equals(this.id).delete()
+        await trainerDb.activities.delete(this.id)
+    }
+
     public async exportFit(): Promise<Uint8Array>{
         const semicirclesPerDegree = Math.pow(2,31)/180;
 

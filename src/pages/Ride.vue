@@ -36,7 +36,12 @@
     return {
       datasets: [
         {
-          data: [{x: recorder.activity.distance/1000, y: recorder.activity.altitude}],
+          data: [
+            {
+              x: (recorder.activeRoute?.distance ?? 0) ? (recorder.activity.distance % recorder.activeRoute!.distance)/1000 : recorder.activity.distance/1000,
+              y: recorder.activity.altitude
+            }
+          ],
           showLine: false,
           pointStyle: 'circle', pointRadius: 5,
           animation: false,
@@ -61,7 +66,7 @@
   const activityMarkers = computed(
     () => {
       const markers:any = [];
-      for(let distance=5000; recorder.activeRoute && distance <= recorder.activeRoute?.distance; distance+=5000){
+      for(let distance=2000; recorder.activeRoute && distance <= recorder.activeRoute?.distance; distance+=2000){
         const position = recorder.activeRoute.geoPointByDistance(distance);
         if( position ){
           markers.push({
@@ -75,7 +80,7 @@
   )
 
   const chartBounds = (distance : number, total: number) => {
-    const pos = Math.trunc(distance/500)/2;
+    const pos = Math.trunc((distance % total)/500)/2;
     const max = Math.trunc(total/500)/2
     if( pos <= 1){
       return {min: 0, max: 4}
@@ -135,12 +140,10 @@
   }
 
   const stopActivitySession = async () => {
-    const activityId = recorder.activity.id
-
     pauseActivitySession()
     await recorder.stopActivity()
     recorder.newActivity()
-    router.push({ name: 'activity', params: {id: activityId} })
+    router.push({name: 'activityList'})
   }
 
   watch(() => heart.batteryLevel, (value) => {
@@ -203,7 +206,7 @@
   </UContainer>
 
   <UContainer class="mt-4" v-if="recorder.activeRoute != undefined">
-    <USlider class="mb-4" v-model="recorder.activity.distance" :max="recorder.activeRoute?.waypoints.at(-1)?.distance ?? 0" :disabled="!isDebug"></USlider>
+     <UProgress :model-value="recorder.activity.distance % recorder.activeRoute.distance" :max="recorder.activeRoute.distance"></UProgress>
     <Scatter :data="altitudeChartData" :options="altitudeChartOptions"></Scatter>
   </UContainer>
 

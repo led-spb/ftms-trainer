@@ -8,8 +8,8 @@ const router = createRouter({
     { path: '/',     name: 'home', component: () => import('../pages/Home.vue'), },
     { path: '/ride', name: 'ride', component: () => import('../pages/Ride.vue'), },
     { path: '/edit', name: 'edit', component: () => import('../pages/Edit.vue'), },
-    { path: '/activities', name: 'activityList', component: () => import('../pages/ActivityList.vue'), },
-    { path: '/activity/:id', name: 'activity', component: () => import('../pages/Activity.vue'), }
+    { path: '/activity', name: 'activityList', component: () => import('../pages/ActivityList.vue'), },
+    //{ path: '/activity/:id', name: 'activity', component: () => import('../pages/Activity.vue'), }
   ],
 })
 

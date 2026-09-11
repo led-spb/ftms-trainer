@@ -1,4 +1,5 @@
 <script setup lang="ts">
+    import { ref } from 'vue';
     import { Activity } from '@/lib/activity';
     import { formatDuration } from '@/lib/format';
 
@@ -6,8 +7,15 @@
         activity: Activity
     }>();
 
+    const isOpen = ref(false)
+
     const formatActivityDate = (activity: Activity) => {
         return activity.startDate?.toLocaleString()
+    }
+
+    const removeActivity = async (activity: Activity) => {
+        activity.remove()
+        isOpen.value = false
     }
     
     const exportActivity = async (activity: Activity) => {
@@ -37,7 +45,15 @@
         </template>
         <template #footer>
             <UButton icon="i-lucide-download" size="sm" @click="exportActivity(activity)" :disabled="!activity.finishDate"></UButton>
-            <UButton icon="i-lucide-trash-2" size="sm" class="ml-1"></UButton>
+            <UModal title="Remove activity?" :ui="{ footer: 'justify-end' }" v-model:open="isOpen">
+                <UButton icon="i-lucide-trash-2" size="sm" class="ml-1"></UButton>
+
+                <template #footer="{ close }">
+                <UButton label="Cancel" color="neutral" variant="outline" @click="close" />
+                <UButton label="Yes" color="neutral" @click="removeActivity(activity)"/>
+                </template>            
+            </UModal>
         </template>
     </UPageCard>
+
 </template>

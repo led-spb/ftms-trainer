@@ -56,28 +56,20 @@
         const points = <GeoPoint[]>[]
         let distance = 0;
         for (let index=0; index < data.length; index++) {
-            if( data.at(index)?.distance! >= distance ){
+            while( data.at(index)?.distance! > distance ){
                 const current = data.at(index)!
+                const prev = data.at(index-1)!
 
-                if( index == 0 ){
-                    points.push({
-                        distance,
-                        latitude: current.positionLat ?? 0,
-                        longitude: current.positionLong ?? 0,
-                        altitude: current.altitude ?? 0,
-                    })
-                }else{
-                    const prev = data.at(index-1)!
+                console.log(`${distance}: ${prev.distance}-${current.distance} ${prev.altitude}-${current.altitude}`)
 
-                    const progress = (prev.distance! - distance) / (current.distance! - prev.distance!)
+                const progress = (distance - prev.distance!) / (current.distance! - prev.distance!)
 
-                    points.push({
-                        distance,
-                        latitude: prev.positionLat!+(current.positionLat! - prev.positionLat!)*progress,
-                        longitude: prev.positionLong!+(current.positionLong! - prev.positionLong!)*progress,
-                        altitude: (prev.altitude??0) + ((current.altitude??0) - (prev.altitude??0))*progress,
-                    })
-                }               
+                points.push({
+                    distance,
+                    latitude: prev.positionLat!+(current.positionLat! - prev.positionLat!)*progress,
+                    longitude: prev.positionLong!+(current.positionLong! - prev.positionLong!)*progress,
+                    altitude: (prev.altitude??0) + ((current.altitude??0) - (prev.altitude??0))*progress,
+                })
 
                 distance += ROUTE_STEP_METERS;
             }

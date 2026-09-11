@@ -120,6 +120,7 @@ export const useRecorderStore = defineStore('recorder', () => {
         }
         activity.value.finishDate = new Date();
         await activity.value.save()
+        await trainerDb.activeRoute.clear()
         console.log(`activity saved`)
     }
 

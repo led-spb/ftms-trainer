@@ -17,7 +17,7 @@ export const useTrainerStore = defineStore('trainer', () => {
     let controlPointChar: any = null;
     let indoorBikeDataChar = null;
 
-    const speed = ref<number|undefined>(import.meta.env.DEV ? 24.7 : undefined);
+    const speed = ref<number|undefined>(import.meta.env.DEV ? 48.7 : undefined);
     const power = ref<number|undefined>(import.meta.env.DEV ? 156 : undefined);
     const cadence = ref<number|undefined>();
 

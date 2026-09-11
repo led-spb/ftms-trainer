@@ -30,22 +30,24 @@ export class Route implements IRoute {
         if( this.waypoints.length == 0 )
             return undefined
 
-        const currIndex = Math.min(Math.trunc(distance/ROUTE_STEP_METERS), this.waypoints.length-1)
-        const nextIndex = Math.min(currIndex+1, this.waypoints.length-1)
-        const next2Index = Math.min(currIndex+2, this.waypoints.length-1)
+        const routeDistance = distance % this.distance
+
+        const currIndex = Math.trunc(routeDistance/ROUTE_STEP_METERS) % this.waypoints.length
+        const nextIndex = (currIndex+1) % this.waypoints.length
+        const next2Index = (currIndex+2) % this.waypoints.length
 
         const current = this.waypoints[currIndex]!
         const next = this.waypoints[nextIndex]!
         const next2 = this.waypoints[next2Index]!
 
-        if( next.distance - current.distance == 0)
+        if( (next.distance % this.distance) - (current.distance % this.distance) == 0)
             return {...current, distance, grade: 0}
 
         const gradeA = (next.altitude - current.altitude) / ROUTE_STEP_METERS * 100
         const gradeB = (next2.altitude - next.altitude) / ROUTE_STEP_METERS * 100
 
         // linear interpolate
-        const progress = (distance - current.distance) / ROUTE_STEP_METERS
+        const progress = (routeDistance - current.distance % this.distance) / ROUTE_STEP_METERS
 
         const latitude = current.latitude + (next.latitude-current.latitude)*progress
         const longitude = current.longitude + (next.longitude-current.longitude)*progress
