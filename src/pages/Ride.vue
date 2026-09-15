@@ -67,14 +67,14 @@
     () => {
       const markers:any = [];
       for(let distance=2000; recorder.activeRoute && distance <= recorder.activeRoute?.distance; distance+=2000){
-        const position = recorder.activeRoute.geoPointByDistance(distance);
-        if( position ){
-          markers.push({
-            name: Math.trunc(distance/1000),
-            pos: position,
-          })
+          const position = recorder.activeRoute.geoPointByDistance(distance);
+          if( position ){
+            markers.push({
+              name: Math.trunc(distance/1000),
+              pos: position,
+            })
+          }
         }
-      }
       return markers;
     }
   )
@@ -195,11 +195,11 @@
     </UForm>
 
     <UForm>
-      <UFormField label="Distance" orientation="horizontal" class="text-4xl mb-1">
+      <UFormField label="Distance" orientation="horizontal" class="text-3xl mb-1">
         {{ (recorder.activity.distance/1000).toFixed(2) }} km
       </UFormField>
 
-      <UFormField label="Time" orientation="horizontal" class="text-4xl mb-1">
+      <UFormField label="Time" orientation="horizontal" class="text-3xl mb-1">
         {{ formatDuration(recorder.activity.elapsed) }}
       </UFormField>
     </UForm>
